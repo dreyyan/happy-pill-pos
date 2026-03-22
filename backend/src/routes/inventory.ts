@@ -6,11 +6,14 @@ import { prisma } from '../lib/prisma';
 import { successResponse, errorResponse } from '../utils/response';
 import { error, info } from '../utils/logger';
 
+// [IMPORT] Middleware
+import { verifyAdmin, verifyAdminOrCashier } from '../middleware/authMiddleware';
+
 const router = Router();
 
 // * [GET] Get All Inventory Logs
 // ? /api/inventory/
-router.get('/', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/', verifyAdminOrCashier, async (req: Request, res: Response, next: NextFunction) => {
     try {
         const { itemId, type, createdById } = req.query;
 
@@ -57,7 +60,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
 
 // * [GET] Get Single Inventory Log
 // ? /api/inventory/:id
-router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/:id', verifyAdminOrCashier, async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
     try {
         const log = await prisma.inventoryLog.findUnique({
@@ -98,7 +101,7 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
 
 // * [POST] Create Inventory Log
 // ? /api/inventory/
-router.post('/', async (req: Request, res: Response, next: NextFunction) => {
+router.post('/',  verifyAdmin, async (req: Request, res: Response, next: NextFunction) => {
     const { itemId, type, quantity, createdById } = req.body;
 
     try {
@@ -129,7 +132,7 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
 
 // * [PUT] Update Inventory Log
 // ? /api/inventory/:id
-router.put('/:id', async (req: Request, res: Response, next: NextFunction) => {
+router.put('/:id', verifyAdmin, async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
     const updateData = req.body;
 
@@ -157,7 +160,7 @@ router.put('/:id', async (req: Request, res: Response, next: NextFunction) => {
 
 // * [PATCH] Restore Inventory Log (Undo Soft Delete)
 // ? /api/inventory/:id/restore
-router.patch('/:id/restore', async (req: Request, res: Response, next: NextFunction) => {
+router.patch('/:id/restore', verifyAdmin, async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
 
     try {
@@ -193,7 +196,7 @@ router.patch('/:id/restore', async (req: Request, res: Response, next: NextFunct
 
 // * [DELETE] Delete Inventory Log (Soft Delete)
 // ? /api/inventory/:id
-router.delete('/:id', async (req: Request, res: Response, next: NextFunction) => {
+router.delete('/:id', verifyAdmin, async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
 
     try {

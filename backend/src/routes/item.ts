@@ -27,12 +27,28 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
         if (category) filters.category = String(category);
         if (isActive !== undefined) filters.isActive = isActive === 'true';
 
-        // [2] Fetch items
+        // [2] Fetch items with only necessary info
         const items = await prisma.item.findMany({
             where: filters,
             include: {
-                createdBy: true,
-                updatedBy: true,
+                createdBy: {
+                    select: {
+                        id: true,
+                        email: true,
+                        firstName: true,
+                        lastName: true,
+                        role: true,
+                    }
+                },
+                updatedBy: {
+                    select: {
+                        id: true,
+                        email: true,
+                        firstName: true,
+                        lastName: true,
+                        role: true,
+                    }
+                }
             },
             orderBy: { name: 'asc' }
         });
@@ -41,7 +57,6 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
         info(`Fetched ${items.length} items`);
         res.json(successResponse("Items fetched successfully", items));
     } catch (err: unknown) {
-        // ! [ERROR] Return error response
         let errorMessage = "An unexpected error occurred while fetching items";
         if (err instanceof Error) {
             errorMessage = err.message;
@@ -50,8 +65,6 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
             error(`Error fetching items: ${JSON.stringify(err)}`);
         }
         res.status(500).json(errorResponse(errorMessage));
-
-        // ! [ERROR] Forward to global error handler
         next(err);
     }
 });
@@ -63,17 +76,37 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
     try {
         const item = await prisma.item.findUnique({
             where: { id: Number(id) },
-            include: { createdBy: true, updatedBy: true, inventoryLogs: true }
+            include: {
+                createdBy: {
+                    select: {
+                        id: true,
+                        email: true,
+                        firstName: true,
+                        lastName: true,
+                        role: true,
+                    }
+                },
+                updatedBy: {
+                    select: {
+                        id: true,
+                        email: true,
+                        firstName: true,
+                        lastName: true,
+                        role: true,
+                    }
+                },
+                inventoryLogs: true
+            }
         });
 
         if (!item) {
             return res.status(404).json(errorResponse("Item not found"));
         }
 
+        // * [SUCCESS] Return item
         info(`Fetched item with id ${id}`);
         res.json(successResponse("Item fetched successfully", item));
     } catch (err: unknown) {
-        // ! [ERROR] Return error response
         let errorMessage = "An unexpected error occurred while fetching item";
         if (err instanceof Error) {
             errorMessage = err.message;
@@ -82,8 +115,6 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
             error(`Error fetching item with id ${id}: ${JSON.stringify(err)}`);
         }
         res.status(500).json(errorResponse(errorMessage));
-
-        // ! [ERROR] Forward to global error handler
         next(err);
     }
 });

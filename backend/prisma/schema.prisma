@@ -26,6 +26,7 @@ model User {
   firstName String
   lastName  String
   role      Role      @default(CASHIER)
+  isActive  Boolean   @default(true)
   
   // ? Metadata
   createdAt DateTime  @default(now())

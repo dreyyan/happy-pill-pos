@@ -62,8 +62,9 @@ model Item {
   price       Float
   cost        Float?
   quantity    Int       @default(0)       // current stock level
-  category    String?                     // "Foods", "Drinks"
-  unit        String?                     // "500mL", "3L", "300g"
+  category    String?                     // "Food", "Drinks"
+  subcategory String?                     // "Appetizers", "Desserts", "Coffee", etc.
+  unit        String?                     // "1 serv.", "500ML", etc.
 
   reorderLevel Int?     @default(0)       // threshold to trigger low-stock alert
   isActive     Boolean  @default(true)    // mark discontinued items

@@ -1,33 +1,45 @@
 // [IMPORT] Setup
 import { Request, Response, NextFunction } from 'express';
+import jwt from 'jsonwebtoken';
 import { prisma } from '../lib/prisma';
 
 // [IMPORT] Helpers
 import { errorResponse } from '../utils/response';
 import { error, info } from '../utils/logger';
-import { getUserIdFromRequest } from '../utils/auth';
+
+// [INTERFACE] JWT Payload
+interface JwtPayload {
+    userId?: number;
+    role?: 'ADMIN' | 'CASHIER';
+}
 
 // * [MIDDLEWARE] Verify Admin
 const verifyAdmin = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const userId = getUserIdFromRequest(req);
-        if (!userId) {
-            return res.status(401).json(errorResponse("User ID missing in request"));
+        // [1] Read token from Authorization header
+        const authHeader = req.headers.authorization;
+        if (!authHeader?.startsWith('Bearer ')) {
+            return res.status(401).json(errorResponse("Unauthorized: token missing"));
+        }
+        const token = authHeader.split(' ')[1];
+
+        // [2] Decode JWT
+        const decoded = jwt.verify(token, process.env.JWT_SECRET!) as JwtPayload;
+
+        // ! [ERROR] Token invalid or missing admin info
+        if (!decoded?.userId || decoded.role !== 'ADMIN') {
+            return res.status(403).json(errorResponse("Unauthorized: Admins only"));
         }
 
+        // [3] Fetch user from DB
         const user = await prisma.user.findUnique({
-            where: { id: Number(userId) },
+            where: { id: decoded.userId },
             include: { admin: true }
         });
 
         // ! [ERROR] User not found or inactive
-        if (!user || !user.isActive) {
+        if (!user || !user.isActive || !user.admin) {
             return res.status(403).json(errorResponse("User not found or inactive"));
-        }
-
-        // ! [ERROR] User is not an admin
-        if (user.role !== 'ADMIN' || !user.admin) {
-            return res.status(403).json(errorResponse("Unauthorized: Admins only"));
         }
 
         // [SUCCESS] Attach user to request and continue
@@ -43,7 +55,7 @@ const verifyAdmin = async (req: Request, res: Response, next: NextFunction) => {
         } else {
             error(`verifyAdmin unknown error: ${JSON.stringify(err)}`);
         }
-        res.status(500).json(errorResponse(errorMessage));
+        res.status(401).json(errorResponse(errorMessage));
         next(err);
     }
 };
@@ -51,27 +63,27 @@ const verifyAdmin = async (req: Request, res: Response, next: NextFunction) => {
 // * [MIDDLEWARE] Verify Cashier
 const verifyCashier = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const userId = getUserIdFromRequest(req);
-        if (!userId) {
-            return res.status(401).json(errorResponse("User ID missing in request"));
+        const authHeader = req.headers.authorization;
+        if (!authHeader?.startsWith('Bearer ')) {
+            return res.status(401).json(errorResponse("Unauthorized: token missing"));
         }
+        const token = authHeader.split(' ')[1];
 
-        const user = await prisma.user.findUnique({
-            where: { id: Number(userId) },
-            include: { cashier: true }
-        });
+        const decoded = jwt.verify(token, process.env.JWT_SECRET!) as JwtPayload;
 
-        // ! [ERROR] User not found or inactive
-        if (!user || !user.isActive) {
-            return res.status(403).json(errorResponse("User not found or inactive"));
-        }
-
-        // ! [ERROR] User is not a cashier
-        if (user.role !== 'CASHIER' || !user.cashier) {
+        if (!decoded?.userId || decoded.role !== 'CASHIER') {
             return res.status(403).json(errorResponse("Unauthorized: Cashiers only"));
         }
 
-        // [SUCCESS] Attach user to request and continue
+        const user = await prisma.user.findUnique({
+            where: { id: decoded.userId },
+            include: { cashier: true }
+        });
+
+        if (!user || !user.isActive || !user.cashier) {
+            return res.status(403).json(errorResponse("User not found or inactive"));
+        }
+
         info(`Cashier verified: ${user.email}`);
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (req as any).user = user;
@@ -84,7 +96,7 @@ const verifyCashier = async (req: Request, res: Response, next: NextFunction) =>
         } else {
             error(`verifyCashier unknown error: ${JSON.stringify(err)}`);
         }
-        res.status(500).json(errorResponse(errorMessage));
+        res.status(401).json(errorResponse(errorMessage));
         next(err);
     }
 };
@@ -92,24 +104,29 @@ const verifyCashier = async (req: Request, res: Response, next: NextFunction) =>
 // * [MIDDLEWARE] Verify Admin or Cashier
 const verifyAdminOrCashier = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const userId = getUserIdFromRequest(req);
-        if (!userId) {
-            return res.status(401).json(errorResponse("User ID missing in request"));
+        const authHeader = req.headers.authorization;
+        if (!authHeader?.startsWith('Bearer ')) {
+            return res.status(401).json(errorResponse("Unauthorized: token missing"));
+        }
+        const token = authHeader.split(' ')[1];
+
+        const decoded = jwt.verify(token, process.env.JWT_SECRET!) as JwtPayload;
+
+        if (!decoded?.userId || !decoded.role) {
+            return res.status(403).json(errorResponse("Unauthorized: Admin or Cashier only"));
         }
 
         const user = await prisma.user.findUnique({
-            where: { id: Number(userId) },
+            where: { id: decoded.userId },
             include: { admin: true, cashier: true }
         });
 
-        // ! [ERROR] User not found or inactive
         if (!user || !user.isActive) {
             return res.status(403).json(errorResponse("User not found or inactive"));
         }
 
-        // ! [ERROR] User is neither admin nor cashier
-        if ((user.role === 'ADMIN' && user.admin) || (user.role === 'CASHIER' && user.cashier)) {
-            info(`User verified: ${user.email} (${user.role})`);
+        if ((decoded.role === 'ADMIN' && user.admin) || (decoded.role === 'CASHIER' && user.cashier)) {
+            info(`User verified: ${user.email} (${decoded.role})`);
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             (req as any).user = user;
             next();
@@ -124,7 +141,7 @@ const verifyAdminOrCashier = async (req: Request, res: Response, next: NextFunct
         } else {
             error(`verifyAdminOrCashier unknown error: ${JSON.stringify(err)}`);
         }
-        res.status(500).json(errorResponse(errorMessage));
+        res.status(401).json(errorResponse(errorMessage));
         next(err);
     }
 };

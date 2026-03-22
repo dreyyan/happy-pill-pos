@@ -10,6 +10,7 @@ import { itemRoutes } from './routes/item';
 import { adminRoutes } from './routes/admin';
 import { cashiersRoutes } from './routes/cashiers';
 import { inventoryRoutes } from './routes/inventory';
+import { transactionRoutes } from './routes/transactions';
 
 const app: Express = express();
 
@@ -35,6 +36,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/cashiers', cashiersRoutes);
 app.use('/api/items', itemRoutes);
 app.use('/api/inventory', inventoryRoutes);
+app.use('/api/transactions', transactionRoutes);
 
 // [MIDDLEWARE] Error Handling
 interface AppError extends Error {

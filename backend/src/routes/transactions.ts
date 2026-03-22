@@ -6,11 +6,14 @@ import { prisma } from '../lib/prisma';
 import { successResponse, errorResponse } from '../utils/response';
 import { error, info } from '../utils/logger';
 
+// [IMPORT] Middleware
+import { verifyAdminOrCashier } from '../middleware/authMiddleware';
+
 const router = Router();
 
 // * [GET] Get All Transactions
 // ? /api/transactions/
-router.get('/', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/', verifyAdminOrCashier, async (req: Request, res: Response, next: NextFunction) => {
     try {
         const transactions = await prisma.transaction.findMany({
             where: { isActive: true },
@@ -48,7 +51,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
 
 // * [GET] Get Single Transaction
 // ? /api/transactions/:id
-router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/:id', verifyAdminOrCashier, async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
 
     try {
@@ -90,7 +93,7 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
 
 // * [POST] Create Transaction (POS Checkout)
 // ? /api/transactions/
-router.post('/', async (req: Request, res: Response, next: NextFunction) => {
+router.post('/', verifyAdminOrCashier, async (req: Request, res: Response, next: NextFunction) => {
     const {
         cashierId,
         items,
@@ -234,7 +237,7 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
 
 // * [PUT] Void Transaction
 // ? /api/transactions/:id/void
-router.put('/:id/void', async (req: Request, res: Response, next: NextFunction) => {
+router.put('/:id/void', verifyAdminOrCashier, async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
 
     try {
@@ -293,7 +296,7 @@ router.put('/:id/void', async (req: Request, res: Response, next: NextFunction) 
 
 // * [DELETE] Delete Transaction (Soft Delete)
 // ? /api/transactions/:id
-router.delete('/:id', async (req: Request, res: Response, next: NextFunction) => {
+router.delete('/:id', verifyAdminOrCashier, async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
 
     try {

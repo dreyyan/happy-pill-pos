@@ -7,11 +7,14 @@ import { successResponse, errorResponse } from '../utils/response';
 import { error, info } from '../utils/logger';
 import { hashPassword } from '../utils/auth';
 
+// [IMPORT] Middleware
+import { verifyAdmin } from '../middleware/authMiddleware';
+
 const router = Router();
 
 // * [GET] Get All Admins
 // ? /api/admins/
-router.get('/', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/', verifyAdmin, async (req: Request, res: Response, next: NextFunction) => {
     try {
         const admins = await prisma.admin.findMany({
             include: { user: true }
@@ -42,7 +45,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
 
 // * [GET] Get Single Admin
 // ? /api/admins/:id
-router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/:id', verifyAdmin, async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
     try {
         const admin = await prisma.admin.findUnique({
@@ -79,7 +82,7 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
 
 // * [POST] Create Admin
 // ? /api/admins/
-router.post('/', async (req: Request, res: Response, next: NextFunction) => {
+router.post('/', verifyAdmin, async (req: Request, res: Response, next: NextFunction) => {
     const { email, password, firstName, lastName } = req.body;
     try {
         // [1] Hash password
@@ -100,11 +103,10 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
 
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { password: _, ...adminWithoutPassword } = newAdmin;
-        res.status(201).json(successResponse("Admin created successfully", adminWithoutPassword));
-
+        
         // * [SUCCESS] Create new 'Admin' user
         info(`Admin created successfully with email: ${email}`);
-        res.status(201).json(successResponse("Admin created successfully", newAdmin));
+        res.status(201).json(successResponse("Admin created successfully", adminWithoutPassword));
     } catch (err: unknown) {
         let errorMessage = "An unexpected error occurred while creating admin";
         if (err instanceof Error) {
@@ -120,9 +122,9 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
 
 // * [PUT] Update Admin
 // ? /api/admins/:id
-router.put('/:id', async (req: Request, res: Response, next: NextFunction) => {
+router.put('/:id', verifyAdmin, async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
-    const { email, firstName, lastName } = req.body; // Password removed
+    const { email, firstName, lastName } = req.body;
 
     try {
         // [1] Fetch current admin user
@@ -177,7 +179,7 @@ router.put('/:id', async (req: Request, res: Response, next: NextFunction) => {
 
 // * [DELETE] Delete Admin (Soft Delete)
 // ? /api/admins/:id
-router.delete('/:id', async (req: Request, res: Response, next: NextFunction) => {
+router.delete('/:id', verifyAdmin, async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
     try {
         // [1] Fetch the user to ensure they exist

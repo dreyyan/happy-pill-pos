@@ -5,7 +5,9 @@ import cors from 'cors';
 import { prisma } from './lib/prisma';
 
 // [IMPORT] Routes
-import { adminRoutes } from './routes/auth';
+import { authRoutes } from './routes/auth';
+import { itemRoutes } from './routes/item';
+import { adminRoutes } from './routes/admin';
 
 const app: Express = express();
 
@@ -26,7 +28,9 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 });
 
 // [ROUTES] Main
-app.use('/api/auth', adminRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/items', itemRoutes);
 
 // [MIDDLEWARE] Error Handling
 interface AppError extends Error {

@@ -13,6 +13,11 @@ enum Role {
   CASHIER
 }
 
+enum InventoryType {
+  STOCK_IN
+  STOCK_OUT
+}
+
 // * [MODELS]
 model User {
   id        Int       @id @default(autoincrement())
@@ -29,6 +34,10 @@ model User {
   // ? Relations
   cashier   Cashier?
   admin     Admin?
+
+  itemsCreated Item[]  @relation("ItemsCreated")
+  itemsUpdated Item[]  @relation("ItemsUpdated")
+  inventoryLogsCreated InventoryLog[] @relation("InventoryLogCreatedBy")
 }
 
 model Cashier {
@@ -41,4 +50,45 @@ model Admin {
   id        Int       @id @default(autoincrement())
   userId    Int       @unique
   user      User      @relation(fields: [userId], references: [id])
+}
+
+model Item {
+  id          Int       @id @default(autoincrement())
+  name        String
+  description String?
+  sku         String?   @unique           // store-specific code
+  barcode     String?   @unique           // optional barcode
+  price       Float
+  cost        Float?
+  quantity    Int       @default(0)       // current stock level
+  category    String?                     // "Foods", "Drinks"
+  unit        String?                     // "500mL", "3L", "300g"
+
+  reorderLevel Int?     @default(0)       // threshold to trigger low-stock alert
+  isActive     Boolean  @default(true)    // mark discontinued items
+
+  // ? Metadata
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // ? Relations
+  createdById Int?
+  createdBy   User?     @relation("ItemsCreated", fields: [createdById], references: [id])
+  updatedById Int?
+  updatedBy   User?     @relation("ItemsUpdated", fields: [updatedById], references: [id])
+
+  inventoryLogs InventoryLog[]
+}
+
+model InventoryLog {
+  id        Int       @id @default(autoincrement())
+  itemId    Int
+  item      Item      @relation(fields: [itemId], references: [id])
+  type      InventoryType
+  quantity  Int
+
+  // ? Metadata
+  createdAt DateTime  @default(now())
+  createdById Int?
+  createdBy User?     @relation("InventoryLogCreatedBy", fields: [createdById], references: [id])
 }

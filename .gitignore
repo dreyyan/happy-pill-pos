@@ -24,3 +24,6 @@ dist-ssr
 *.sw?
 
 .env
+# Prisma generated client
+backend/generated/
+src/generated/prisma/

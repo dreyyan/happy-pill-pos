@@ -54,6 +54,68 @@ router.post('/', verifyAdmin, async (req: Request, res: Response, next: NextFunc
     }
 });
 
+// * [POST] Auto-create Subcategories
+// ? /api/subcategories/auto-create-all
+router.post('/auto-create-all', verifyAdmin, async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        // [1] Define all subcategories
+        const subcategories = [
+            { name: 'Desserts', categoryName: 'Food' },
+            { name: 'Appetizers', categoryName: 'Food' },
+            { name: 'Hot Coffee', categoryName: 'Drinks' },
+            { name: 'Cold Coffee', categoryName: 'Drinks' },
+            { name: 'Frappe', categoryName: 'Drinks' },
+            { name: 'Cooler', categoryName: 'Drinks' },
+            { name: 'Shakes', categoryName: 'Drinks' },
+            { name: 'Milk', categoryName: 'Drinks' },
+            { name: 'Soft Drinks', categoryName: 'Drinks' },
+            { name: 'Others', categoryName: 'Drinks' }
+        ];
+
+        // [2] Loop and create subcategories
+        const createdSubcategories = [];
+        for (const sub of subcategories) {
+            // [2a] Find parent category
+            const parentCategory = await prisma.category.findUnique({
+                where: { name: sub.categoryName }
+            });
+
+            if (!parentCategory) {
+                error(`Parent category not found: ${sub.categoryName}`);
+                continue;
+            }
+
+            // [2b] Create subcategory if not exists
+            const subcategory = await prisma.subcategory.upsert({
+                where: {
+                    name_categoryId: { // composite unique (name + categoryId)
+                        name: sub.name,
+                        categoryId: parentCategory.id
+                    }
+                },
+                update: {},
+                create: {
+                    name: sub.name,
+                    categoryId: parentCategory.id,
+                    isActive: true
+                }
+            });
+
+            createdSubcategories.push(subcategory);
+        }
+
+        // * [SUCCESS] Subcategories seeded
+        info(`Seeded ${createdSubcategories.length} subcategories`);
+        res.status(201).json(successResponse("Subcategories seeded successfully", createdSubcategories));
+    } catch (err: unknown) {
+        let msg = "Error seeding subcategories";
+        if (err instanceof Error) msg = err.message;
+        error(`Seed subcategories error: ${msg}`);
+        res.status(500).json(errorResponse(msg));
+        next(err);
+    }
+});
+
 // * [PUT] Update Subcategory
 // ? /api/subcategories/:id
 router.put('/:id', verifyAdmin, async (req: Request, res: Response, next: NextFunction) => {
@@ -152,6 +214,39 @@ router.delete('/:id', verifyAdmin, async (req: Request, res: Response, next: Nex
         let errorMessage = "An unexpected error occurred while deleting subcategory";
         if (err instanceof Error) errorMessage = err.message;
         error(`Error deleting subcategory with id ${id}: ${errorMessage}`);
+        res.status(500).json(errorResponse(errorMessage));
+        next(err);
+    }
+});
+
+// * [DELETE] Hard Delete Subcategory
+// ? /api/subcategories/:id/hard
+router.delete('/:id/hard', verifyAdmin, async (req: Request, res: Response, next: NextFunction) => {
+    const { id } = req.params;
+
+    try {
+        // [1] Fetch subcategory to ensure it exists
+        const existingSubcategory = await prisma.subcategory.findUnique({
+            where: { id: Number(id) }
+        });
+
+        // ! [ERROR] Subcategory not found
+        if (!existingSubcategory) {
+            return res.status(404).json(errorResponse("Subcategory not found"));
+        }
+
+        // [2] Hard delete the subcategory
+        await prisma.subcategory.delete({
+            where: { id: Number(id) }
+        });
+
+        // * [SUCCESS] Subcategory hard deleted
+        info(`Subcategory with id ${id} permanently deleted`);
+        res.json(successResponse("Subcategory permanently deleted", { id: Number(id) }));
+    } catch (err: unknown) {
+        let errorMessage = "An unexpected error occurred while hard deleting subcategory";
+        if (err instanceof Error) errorMessage = err.message;
+        error(`Hard delete subcategory with id ${id} error: ${errorMessage}`);
         res.status(500).json(errorResponse(errorMessage));
         next(err);
     }

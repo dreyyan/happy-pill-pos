@@ -67,6 +67,17 @@ model Admin {
   user   User @relation(fields: [userId], references: [id])
 }
 
+model Category {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  items       Item[]
+}
+
 model Item {
   id          Int       @id @default(autoincrement())
   name        String
@@ -76,23 +87,24 @@ model Item {
   price       Float
   cost        Float?
   quantity    Int       @default(0)
-  category    String?
   subcategory String?
   unit        String?
-
   reorderLevel Int?     @default(0)
   isActive     Boolean  @default(true)
+
+  // ? Category relation
+  categoryId  Int?
+  category    Category? @relation(fields: [categoryId], references: [id])
 
   // ? Metadata
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
-
-  // ? Relations
   createdById Int?
   createdBy   User?     @relation("ItemsCreated", fields: [createdById], references: [id])
   updatedById Int?
   updatedBy   User?     @relation("ItemsUpdated", fields: [updatedById], references: [id])
 
+  // ? Relations
   inventoryLogs   InventoryLog[]
   transactionItems TransactionItem[]
   inventoryReports InventoryReport[]

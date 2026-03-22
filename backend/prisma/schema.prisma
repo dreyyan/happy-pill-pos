@@ -6,3 +6,39 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+// * [ENUMS]
+enum Role {
+  ADMIN
+  CASHIER
+}
+
+// * [MODELS]
+model User {
+  id        Int       @id @default(autoincrement())
+  email     String    @unique
+  password  String
+  firstName String
+  lastName  String
+  role      Role      @default(CASHIER)
+  
+  // ? Metadata
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  // ? Relations
+  cashier   Cashier?
+  admin     Admin?
+}
+
+model Cashier {
+  id        Int       @id @default(autoincrement())
+  userId    Int       @unique
+  user      User      @relation(fields: [userId], references: [id])
+}
+
+model Admin {
+  id        Int       @id @default(autoincrement())
+  userId    Int       @unique
+  user      User      @relation(fields: [userId], references: [id])
+}

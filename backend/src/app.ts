@@ -1,7 +1,11 @@
+// [IMPORT]
 import 'dotenv/config';
 import express, { Express, Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import { prisma } from './lib/prisma';
+
+// [IMPORT] Routes
+import { adminRoutes } from './routes/auth';
 
 const app: Express = express();
 
@@ -21,9 +25,8 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   next();
 });
 
-// [ROUTES]
-// import authRoutes from './routes/auth';
-// app.use('/api/auth', authRoutes);
+// [ROUTES] Main
+app.use('/api/auth', adminRoutes);
 
 // [MIDDLEWARE] Error Handling
 interface AppError extends Error {

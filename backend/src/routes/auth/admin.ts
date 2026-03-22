@@ -35,9 +35,13 @@ router.post('/sign-up', async (req: Request, res: Response, next: NextFunction) 
             }, include: { admin: true }
         });
 
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { password: _, ...cashierWithoutPassword } = newUser;
+        res.json(successResponse("Admin account created", cashierWithoutPassword));
+
         // * [SUCCESS] Return new 'Admin' user
         info(`Admin created successfully with email: ${email}`);
-        res.json(successResponse("Admin account created", newUser));
+        res.json(successResponse("Admin account created", cashierWithoutPassword));
     } catch (err: unknown) {
         let errorMessage = "An unexpected error occured";
 

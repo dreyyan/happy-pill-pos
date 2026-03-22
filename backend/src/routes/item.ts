@@ -5,7 +5,6 @@ import { prisma } from '../lib/prisma';
 // [IMPORT] Helpers
 import { successResponse, errorResponse } from '../utils/response';
 import { error, info } from '../utils/logger';
-import { getUserIdFromRequest } from '../utils/auth';
 
 // [IMPORT] Middleware
 import { verifyAdmin, verifyAdminOrCashier } from '../middleware/authMiddleware';
@@ -128,13 +127,8 @@ router.get('/:id', verifyAdminOrCashier, async (req: Request, res: Response, nex
 router.post('/', verifyAdmin, async (req: Request, res: Response, next: NextFunction) => {
     const { name, description, sku, barcode, price, cost, quantity, category, unit, reorderLevel, isActive } = req.body;
 
-    const createdByIdStr = getUserIdFromRequest(req);
-    const createdById = createdByIdStr ? Number(createdByIdStr) : undefined;
-
-    // ! [ERROR] User ID missing
-    if (!createdById) {
-        return res.status(400).json(errorResponse("User ID is missing from request"));
-    }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const createdById = (req as any).user.id;
 
     try {
         const newItem = await prisma.item.create({

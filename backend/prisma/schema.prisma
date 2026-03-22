@@ -95,6 +95,7 @@ model Item {
 
   inventoryLogs   InventoryLog[]
   transactionItems TransactionItem[]
+  inventoryReports InventoryReport[]
 }
 
 model InventoryLog {
@@ -154,4 +155,29 @@ model TransactionItem {
 
   quantity      Int
   subtotal      Float
+}
+
+model SalesReport {
+  id        Int      @id @default(autoincrement())
+  date      DateTime                                  // report date (e.g. daily, weekly, monthly)
+  totalSales Float                                    // total sales for a period
+  totalProfit Float                                   // total profit (revenue - cost)
+  totalTransactions Int                               // number of transactions
+
+  // ? Metadata
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model InventoryReport {
+  id        Int      @id @default(autoincrement())
+  itemId    Int
+  item      Item     @relation(fields: [itemId], references: [id])
+  currentStock Int
+  stockIn     Int
+  stockOut    Int
+
+  // ? Metadata
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

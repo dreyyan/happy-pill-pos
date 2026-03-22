@@ -5,11 +5,12 @@ import { prisma } from '../lib/prisma';
 // [IMPORT] Helpers
 import { errorResponse } from '../utils/response';
 import { error, info } from '../utils/logger';
+import { getUserIdFromRequest } from '../utils/auth';
 
-// * [MIDDLEWARE] Verify admin
+// * [MIDDLEWARE] Verify Admin
 const verifyAdmin = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const userId = req.body.userId || req.headers['x-user-id'];
+        const userId = getUserIdFromRequest(req);
         if (!userId) {
             return res.status(401).json(errorResponse("User ID missing in request"));
         }
@@ -50,7 +51,7 @@ const verifyAdmin = async (req: Request, res: Response, next: NextFunction) => {
 // * [MIDDLEWARE] Verify Cashier
 const verifyCashier = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const userId = req.body.userId || req.headers['x-user-id'];
+        const userId = getUserIdFromRequest(req);
         if (!userId) {
             return res.status(401).json(errorResponse("User ID missing in request"));
         }
@@ -91,7 +92,7 @@ const verifyCashier = async (req: Request, res: Response, next: NextFunction) =>
 // * [MIDDLEWARE] Verify Admin or Cashier
 const verifyAdminOrCashier = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const userId = req.body.userId || req.headers['x-user-id'];
+        const userId = getUserIdFromRequest(req);
         if (!userId) {
             return res.status(401).json(errorResponse("User ID missing in request"));
         }

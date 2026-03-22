@@ -13,7 +13,7 @@ import { verifyAdmin } from '../middleware/authMiddleware';
 const router = Router();
 
 // * [GET] Get All Admins
-// ? /api/admins/
+// ? /api/admin/
 router.get('/', verifyAdmin, async (req: Request, res: Response, next: NextFunction) => {
     try {
         const admins = await prisma.admin.findMany({
@@ -44,7 +44,7 @@ router.get('/', verifyAdmin, async (req: Request, res: Response, next: NextFunct
 });
 
 // * [GET] Get Single Admin
-// ? /api/admins/:id
+// ? /api/admin/:id
 router.get('/:id', verifyAdmin, async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
     try {
@@ -81,7 +81,7 @@ router.get('/:id', verifyAdmin, async (req: Request, res: Response, next: NextFu
 });
 
 // * [POST] Create Admin
-// ? /api/admins/
+// ? /api/admin/
 router.post('/', verifyAdmin, async (req: Request, res: Response, next: NextFunction) => {
     const { email, password, firstName, lastName } = req.body;
     try {
@@ -121,7 +121,7 @@ router.post('/', verifyAdmin, async (req: Request, res: Response, next: NextFunc
 });
 
 // * [PUT] Update Admin
-// ? /api/admins/:id
+// ? /api/admin/:id
 router.put('/:id', verifyAdmin, async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
     const { email, firstName, lastName } = req.body;
@@ -178,7 +178,7 @@ router.put('/:id', verifyAdmin, async (req: Request, res: Response, next: NextFu
 });
 
 // * [PATCH] Reactivate Admin
-// ? /api/admins/:id/reactivate
+// ? /api/admin/:id/reactivate
 router.patch('/:id/reactivate', verifyAdmin, async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
 
@@ -219,8 +219,34 @@ router.patch('/:id/reactivate', verifyAdmin, async (req: Request, res: Response,
     }
 });
 
+// * [PATCH] Soft delete all admins (except self)
+// ? /api/admin/delete-all
+router.patch('/delete-all', verifyAdmin, async (req, res, next) => {
+    try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const currentUserId = (req as any).user?.userId;
+
+        const result = await prisma.user.updateMany({
+            where: {
+                role: 'ADMIN',
+                id: { not: currentUserId }
+            },
+            data: { isActive: false }
+        });
+
+        info(`Soft-deleted ${result.count} admins`);
+        res.json(successResponse(`${result.count} admins soft-deleted`, result));
+    } catch (err: unknown) {
+        let errorMessage = "An unexpected error occurred while deleting admins";
+        if (err instanceof Error) errorMessage = err.message;
+        error(`Error deleting admins: ${errorMessage}`);
+        res.status(500).json(errorResponse(errorMessage));
+        next(err);
+    }
+});
+
 // * [DELETE] Delete Admin (Soft Delete)
-// ? /api/admins/:id
+// ? /api/admin/:id
 router.delete('/:id', verifyAdmin, async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
     try {

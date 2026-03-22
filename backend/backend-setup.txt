@@ -1,0 +1,46 @@
+backend/
+├── src/
+│   ├── controllers/        # Request handlers for routes (business logic)
+│   │   ├── authController.ts
+│   │   ├── userController.ts
+│   │   └── productController.ts
+│   │
+│   ├── routes/             # Route definitions connecting paths to controllers
+│   │   ├── authRoutes.ts
+│   │   ├── userRoutes.ts
+│   │   └── productRoutes.ts
+│   │
+│   ├── middleware/         # Express middleware
+│   │   ├── authMiddleware.ts   # JWT verification
+│   │   ├── errorHandler.ts
+│   │   └── logger.ts
+│   │
+│   ├── services/           # Reusable business logic (e.g., DB queries)
+│   │   ├── userService.ts
+│   │   └── productService.ts
+│   │
+│   ├── utils/              # Helper functions
+│   │   ├── hashPassword.ts
+│   │   └── generateToken.ts
+│   │
+│   ├── config/             # App configuration
+│   │   ├── database.ts      # Prisma client setup
+│   │   └── env.ts           # Environment variables handling
+│   │
+│   ├── models/             # (Optional) extra data models if not in Prisma
+│   │   └── exampleModel.ts
+│   │
+│   ├── app.ts              # Express app setup (routes, middleware)
+│   └── server.ts           # Entry point (starts server)
+│
+├── prisma/                 # Prisma schema & migrations
+│   ├── schema.prisma
+│   └── migrations/
+│
+├── tests/                  # Unit & integration tests
+│   ├── auth.test.ts
+│   └── user.test.ts
+│
+├── package.json
+├── tsconfig.json
+└── .env                    # Environment variables

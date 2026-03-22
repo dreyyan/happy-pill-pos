@@ -177,6 +177,48 @@ router.put('/:id', verifyAdmin, async (req: Request, res: Response, next: NextFu
     }
 });
 
+// * [PATCH] Reactivate Admin
+// ? /api/admins/:id/reactivate
+router.patch('/:id/reactivate', verifyAdmin, async (req: Request, res: Response, next: NextFunction) => {
+    const { id } = req.params;
+
+    try {
+        // [1] Fetch the user to ensure they exist
+        const existingUser = await prisma.user.findUnique({
+            where: { id: Number(id) },
+            include: { admin: true }
+        });
+
+        // ! [ERROR] Admin not found
+        if (!existingUser || existingUser.role !== 'ADMIN') {
+            return res.status(404).json(errorResponse("Admin not found"));
+        }
+
+        // [2] Reactivate admin by setting isActive to true
+        const reactivatedUser = await prisma.user.update({
+            where: { id: Number(id) },
+            data: { isActive: true },
+            include: { admin: true }
+        });
+
+        // * [SUCCESS] Admin reactivated successfully
+        info(`Admin with id ${id} reactivated successfully`);
+        res.json(successResponse("Admin reactivated successfully", reactivatedUser));
+    } catch (err: unknown) {
+        let errorMessage = "An unexpected error occurred while reactivating admin";
+        if (err instanceof Error) {
+            errorMessage = err.message;
+            error(`Error reactivating admin with id ${id}: ${errorMessage}`);
+        } else {
+            error(`Error reactivating admin with id ${id}: ${JSON.stringify(err)}`);
+        }
+        res.status(500).json(errorResponse(errorMessage));
+
+        // ! [ERROR] Forward to global error handler
+        next(err);
+    }
+});
+
 // * [DELETE] Delete Admin (Soft Delete)
 // ? /api/admins/:id
 router.delete('/:id', verifyAdmin, async (req: Request, res: Response, next: NextFunction) => {

@@ -1,6 +1,6 @@
 // [IMPORT] Setup
 import { Router, Request, Response, NextFunction } from 'express';
-import { prisma } from '../../../lib/prisma';
+import { prisma } from '../../lib/prisma';
 import bcrypt from 'bcrypt';
 
 // [IMPORT] Helpers
@@ -15,7 +15,7 @@ const router = Router();
 
 // * [POST] Sign Up Admin
 // ? /api/auth/admin/sign-up
-router.get('/', async (req: Request, res: Response, next: NextFunction) => {
+router.post('/', async (req: Request, res: Response, next: NextFunction) => {
     const { email, password, firstName, lastName } = req.body;
     try {
         // [1] Hash password
@@ -32,8 +32,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
                 admin: {
                     create: {}
                 },
-                include: { admin: true }
-            }
+            }, include: { admin: true }
         });
 
         // * [SUCCESS] Return new 'Admin' user
@@ -58,7 +57,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
 
 // * [POST] Login Admin
 // ? /api/auth/admin/login
-router.get('/', async (req: Request, res: Response, next: NextFunction) => {
+router.post('/', async (req: Request, res: Response, next: NextFunction) => {
     const { email, password, rememberMe } = req.body;
 
     // [1] Perform input validation
@@ -68,14 +67,17 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
 
     try {
         // [2] Search if admin exists
-        const admin = await prisma.admin.findUnique({ where: { email } });
+        const admin = await prisma.admin.findFirst({
+            where: { user: { email } },
+            include: { user: true }
+        });
 
         // ! [ERROR] Admin does not exist
         if (!admin)
             return res.status(404).json(await errorResponse("Admin not found in the database"));
 
         // [3] Check if password exists
-        const passwordMatches = bcrypt.compare(password, admin.password);
+        const passwordMatches = bcrypt.compare(password, admin.user.password);
 
         // ! [ERROR] Incorrect password
         if (!passwordMatches)
@@ -83,7 +85,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
 
         // [4] Create payload
         const payload: TokenPayload = {
-            userId: admin.id,
+            userId: admin.user.id,
             role: 'ADMIN'
         };
         
@@ -93,7 +95,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
 
         // [6] Create data without password
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const { password: _, ...adminWithoutPassword } = admin;
+        const { password: _, ...adminWithoutPassword } = admin.user;
         return res.status(200).json(successResponse("Admin logged in successfully", {
             admin: adminWithoutPassword, token
         }));

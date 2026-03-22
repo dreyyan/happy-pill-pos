@@ -156,4 +156,37 @@ router.delete('/:id', verifyAdmin, async (req: Request, res: Response, next: Nex
     }
 });
 
+// * [DELETE] Hard Delete Category
+// ? /api/categories/:id/hard
+router.delete('/:id/hard', verifyAdmin, async (req: Request, res: Response, next: NextFunction) => {
+    const { id } = req.params;
+
+    try {
+        // [1] Fetch category to ensure it exists
+        const existingCategory = await prisma.category.findUnique({
+            where: { id: Number(id) }
+        });
+
+        // ! [ERROR] Category not found
+        if (!existingCategory) {
+            return res.status(404).json(errorResponse("Category not found"));
+        }
+
+        // [2] Hard delete the category
+        await prisma.category.delete({
+            where: { id: Number(id) }
+        });
+
+        // * [SUCCESS] Category hard deleted
+        info(`Category with id ${id} permanently deleted`);
+        res.json(successResponse("Category permanently deleted", { id: Number(id) }));
+    } catch (err: unknown) {
+        let errorMessage = "An unexpected error occurred while hard deleting category";
+        if (err instanceof Error) errorMessage = err.message;
+        error(`Hard delete category with id ${id} error: ${errorMessage}`);
+        res.status(500).json(errorResponse(errorMessage));
+        next(err);
+    }
+});
+
 export const categoryRoutes = router;

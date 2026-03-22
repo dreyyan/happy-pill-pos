@@ -286,4 +286,47 @@ router.delete('/:id', verifyAdmin, async (req: Request, res: Response, next: Nex
     }
 });
 
+// * [DELETE] Hard Delete Admin
+// ? /api/admin/:id/hard
+router.delete('/:id/hard', verifyAdmin, async (req: Request, res: Response, next: NextFunction) => {
+    const { id } = req.params;
+
+    try {
+        // [1] Fetch the user to ensure they exist
+        const existingUser = await prisma.user.findUnique({
+            where: { id: Number(id) },
+            include: { admin: true } // admin may be null
+        });
+
+        // ! [ERROR] Admin not found
+        if (!existingUser || existingUser.role !== 'ADMIN') {
+            return res.status(404).json(errorResponse("Admin not found"));
+        }
+
+        // ! [ERROR] Admin relation missing
+        if (!existingUser.admin) {
+            return res.status(500).json(errorResponse("Admin relation is missing"));
+        }
+
+        // [2] Hard delete admin and user
+        await prisma.admin.delete({
+            where: { id: existingUser.admin.id }
+        });
+
+        await prisma.user.delete({
+            where: { id: Number(id) }
+        });
+
+        // * [SUCCESS] Admin hard deleted
+        info(`Admin with id ${id} hard-deleted successfully`);
+        res.json(successResponse("Admin hard-deleted successfully", { id }));
+    } catch (err: unknown) {
+        let errorMessage = "An unexpected error occurred while hard-deleting admin";
+        if (err instanceof Error) errorMessage = err.message;
+        error(`Error hard-deleting admin with id ${id}: ${errorMessage}`);
+        res.status(500).json(errorResponse(errorMessage));
+        next(err);
+    }
+});
+
 export const adminRoutes = router;

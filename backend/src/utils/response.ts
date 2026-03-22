@@ -1,12 +1,12 @@
 // ? [HELPER] Standardizes a success response
-const successResponse = async (message: string, data=null) => ({
+const successResponse = <T = unknown>(message: string, data?: T) => ({
     success: true,
     message: `[SUCCESS] ${message}`,
     data
 })
 
 // ? [HELPER] Standardizes an error response
-const errorResponse = async (message: string, data=null) => ({
+const errorResponse = <T = unknown>(message: string, data?: T) => ({
     success: false,
     message: `[ERROR] ${message}`,
     data

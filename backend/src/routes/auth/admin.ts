@@ -15,7 +15,7 @@ const router = Router();
 
 // * [POST] Sign Up Admin
 // ? /api/auth/admin/sign-up
-router.post('/', async (req: Request, res: Response, next: NextFunction) => {
+router.post('/sign-up', async (req: Request, res: Response, next: NextFunction) => {
     const { email, password, firstName, lastName } = req.body;
     try {
         // [1] Hash password
@@ -57,7 +57,7 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
 
 // * [POST] Login Admin
 // ? /api/auth/admin/login
-router.post('/', async (req: Request, res: Response, next: NextFunction) => {
+router.post('/login', async (req: Request, res: Response, next: NextFunction) => {
     const { email, password, rememberMe } = req.body;
 
     // [1] Perform input validation

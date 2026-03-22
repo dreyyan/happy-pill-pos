@@ -104,6 +104,9 @@ model Subcategory {
 
   // ? Item relation
   items       Item[]
+
+  // ? Composite key
+  @@unique([name, categoryId])
 }
 
 model Item {

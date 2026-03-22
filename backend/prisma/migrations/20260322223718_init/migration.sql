@@ -1,0 +1,4 @@
+-- AlterTable
+ALTER TABLE "Transaction" ADD COLUMN     "isReported" BOOLEAN DEFAULT true,
+ADD COLUMN     "taxAmount" DOUBLE PRECISION DEFAULT 0,
+ADD COLUMN     "taxRate" DOUBLE PRECISION DEFAULT 0.03;

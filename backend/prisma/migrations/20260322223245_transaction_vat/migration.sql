@@ -1,0 +1,5 @@
+-- AlterTable
+ALTER TABLE "Transaction" ADD COLUMN     "grandTotal" DOUBLE PRECISION,
+ADD COLUMN     "vatAmount" DOUBLE PRECISION DEFAULT 0,
+ADD COLUMN     "vatInclusive" BOOLEAN,
+ADD COLUMN     "vatRate" DOUBLE PRECISION DEFAULT 0.12;

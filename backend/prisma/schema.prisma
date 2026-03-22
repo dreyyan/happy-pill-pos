@@ -169,6 +169,15 @@ model Transaction {
   totalAmount   Float
   discount      Float?    @default(0)
 
+  vatInclusive  Boolean?                  // true = price includes VAT, false = price excludes VAT
+  vatRate       Float?    @default(0.12)  // 12% VAT rate, can be null if non-VAT
+  vatAmount     Float?    @default(0)     // Amount of VAT in the transaction
+  grandTotal    Float?                    // totalAmount + vatAmount - discount
+
+  taxRate Float? @default(0.03)           // for 3% percentage tax
+  taxAmount Float? @default(0)
+  isReported Boolean? @default(true)      // if sale is reported
+
   cashReceived  Float
   changeGiven   Float
 

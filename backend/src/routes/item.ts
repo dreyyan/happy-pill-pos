@@ -5,12 +5,16 @@ import { prisma } from '../lib/prisma';
 // [IMPORT] Helpers
 import { successResponse, errorResponse } from '../utils/response';
 import { error, info } from '../utils/logger';
+import { getUserIdFromRequest } from '../utils/auth';
+
+// [IMPORT] Middleware
+import { verifyAdmin, verifyAdminOrCashier } from '../middleware/authMiddleware';
 
 const router = Router();
 
 // * [GET] Get All Items
 // ? /api/items/
-router.get('/', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/', verifyAdminOrCashier, async (req: Request, res: Response, next: NextFunction) => {
     try {
         const { search, category, isActive } = req.query;
 
@@ -71,7 +75,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
 
 // * [GET] Get Single Item
 // ? /api/items/:id
-router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/:id', verifyAdminOrCashier, async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
     try {
         const item = await prisma.item.findUnique({
@@ -121,8 +125,17 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
 
 // * [POST] Create Item
 // ? /api/items/
-router.post('/', async (req: Request, res: Response, next: NextFunction) => {
-    const { name, description, sku, barcode, price, cost, quantity, category, unit, reorderLevel, isActive, createdById } = req.body;
+router.post('/', verifyAdmin, async (req: Request, res: Response, next: NextFunction) => {
+    const { name, description, sku, barcode, price, cost, quantity, category, unit, reorderLevel, isActive } = req.body;
+
+    const createdByIdStr = getUserIdFromRequest(req);
+    const createdById = createdByIdStr ? Number(createdByIdStr) : undefined;
+
+    // ! [ERROR] User ID missing
+    if (!createdById) {
+        return res.status(400).json(errorResponse("User ID is missing from request"));
+    }
+
     try {
         const newItem = await prisma.item.create({
             data: {
@@ -161,7 +174,7 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
 
 // * [POST] Auto-Create Items
 // ? /api/items/auto-create
-router.post('/auto-create', async (req: Request, res: Response, next: NextFunction) => {
+router.post('/auto-create', verifyAdmin, async (req: Request, res: Response, next: NextFunction) => {
     try {
         // [1] List of all items to auto-create
         const itemsToCreate = [
@@ -231,7 +244,7 @@ router.post('/auto-create', async (req: Request, res: Response, next: NextFuncti
         // [2] Insert all items into DB
         const createdItems = await prisma.item.createMany({
             data: itemsToCreate,
-            skipDuplicates: true, // avoids creating items with duplicate SKUs
+            skipDuplicates: true,
         });
 
         info(`Auto-created ${itemsToCreate.length} items`);
@@ -251,7 +264,7 @@ router.post('/auto-create', async (req: Request, res: Response, next: NextFuncti
 
 // * [PUT] Update Item
 // ? /api/items/:id
-router.put('/:id', async (req: Request, res: Response, next: NextFunction) => {
+router.put('/:id', verifyAdmin, async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
     const updateData = req.body;
     try {
@@ -277,7 +290,7 @@ router.put('/:id', async (req: Request, res: Response, next: NextFunction) => {
 
 // * [DELETE] Delete Item (Soft Delete => isActive)
 // ? /api/items/:id
-router.delete('/:id', async (req: Request, res: Response, next: NextFunction) => {
+router.delete('/:id', verifyAdmin, async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
     try {
         const deletedItem = await prisma.item.update({
@@ -305,7 +318,7 @@ router.delete('/:id', async (req: Request, res: Response, next: NextFunction) =>
 
 // * [DELETE] Delete Item (Hard)
 // ? /api/items/:id/hard
-router.delete('/:id/hard', async (req: Request, res: Response, next: NextFunction) => {
+router.delete('/:id/hard', verifyAdmin, async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
 
     try {
@@ -333,7 +346,7 @@ router.delete('/:id/hard', async (req: Request, res: Response, next: NextFunctio
 
 // * [DELETE] Delete All Items (Hard)
 // ? /api/items/hard-delete-all
-router.delete('/hard-delete-all', async (req: Request, res: Response, next: NextFunction) => {
+router.delete('/hard-delete-all', verifyAdmin, async (req: Request, res: Response, next: NextFunction) => {
     try {
         // [1] Delete all items
         const deletedItems = await prisma.item.deleteMany({});

@@ -18,6 +18,17 @@ enum InventoryType {
   STOCK_OUT
 }
 
+enum TransactionStatus {
+  COMPLETED
+  VOIDED
+  REFUNDED
+}
+
+enum PaymentMethod {
+  CASH
+  GCASH
+}
+
 // * [MODELS]
 model User {
   id        Int       @id @default(autoincrement())
@@ -42,32 +53,35 @@ model User {
 }
 
 model Cashier {
-  id        Int       @id @default(autoincrement())
-  userId    Int       @unique
-  user      User      @relation(fields: [userId], references: [id])
+  id     Int  @id @default(autoincrement())
+  userId Int  @unique
+  user   User @relation(fields: [userId], references: [id])
+
+  // ? Relations
+  transactions Transaction[]
 }
 
 model Admin {
-  id        Int       @id @default(autoincrement())
-  userId    Int       @unique
-  user      User      @relation(fields: [userId], references: [id])
+  id     Int  @id @default(autoincrement())
+  userId Int  @unique
+  user   User @relation(fields: [userId], references: [id])
 }
 
 model Item {
   id          Int       @id @default(autoincrement())
   name        String
   description String?
-  sku         String?   @unique           // store-specific code
-  barcode     String?   @unique           // optional barcode
+  sku         String?   @unique
+  barcode     String?   @unique
   price       Float
   cost        Float?
-  quantity    Int       @default(0)       // current stock level
-  category    String?                     // "Food", "Drinks"
-  subcategory String?                     // "Appetizers", "Desserts", "Coffee", etc.
-  unit        String?                     // "1 serv.", "500ML", etc.
+  quantity    Int       @default(0)
+  category    String?
+  subcategory String?
+  unit        String?
 
-  reorderLevel Int?     @default(0)       // threshold to trigger low-stock alert
-  isActive     Boolean  @default(true)    // mark discontinued items
+  reorderLevel Int?     @default(0)
+  isActive     Boolean  @default(true)
 
   // ? Metadata
   createdAt   DateTime  @default(now())
@@ -79,7 +93,8 @@ model Item {
   updatedById Int?
   updatedBy   User?     @relation("ItemsUpdated", fields: [updatedById], references: [id])
 
-  inventoryLogs InventoryLog[]
+  inventoryLogs   InventoryLog[]
+  transactionItems TransactionItem[]
 }
 
 model InventoryLog {
@@ -88,10 +103,55 @@ model InventoryLog {
   item      Item      @relation(fields: [itemId], references: [id])
   type      InventoryType
   quantity  Int
-  isActive    Boolean       @default(true)
+  isActive  Boolean   @default(true)
 
   // ? Metadata
   createdAt DateTime  @default(now())
   createdById Int?
   createdBy User?     @relation("InventoryLogCreatedBy", fields: [createdById], references: [id])
+}
+
+model Transaction {
+  id            Int       @id @default(autoincrement())
+
+  receiptNumber String    @unique
+
+  cashierId     Int
+  cashier       Cashier   @relation(fields: [cashierId], references: [id])
+
+  totalAmount   Float
+  discount      Float?    @default(0)
+
+  cashReceived  Float
+  changeGiven   Float
+
+  paymentMethod PaymentMethod @default(CASH)
+  status        TransactionStatus @default(COMPLETED)
+
+  isActive      Boolean   @default(true)
+
+  // ? Metadata
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // ? Relations
+  items         TransactionItem[]
+}
+
+model TransactionItem {
+  id            Int     @id @default(autoincrement())
+
+  transactionId Int
+  transaction   Transaction @relation(fields: [transactionId], references: [id])
+
+  itemId        Int
+  item          Item    @relation(fields: [itemId], references: [id])
+
+  // ? Snapshot (preserves history even if item changes)
+  itemName      String
+  priceAtSale   Float
+  costAtSale    Float?
+
+  quantity      Int
+  subtotal      Float
 }

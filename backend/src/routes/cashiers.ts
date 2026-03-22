@@ -7,11 +7,14 @@ import { successResponse, errorResponse } from '../utils/response';
 import { error, info } from '../utils/logger';
 import { hashPassword } from '../utils/auth';
 
+// [IMPORT] Middleware
+import { verifyAdmin, verifyAdminOrCashier } from '../middleware/authMiddleware';
+
 const router = Router();
 
 // * [GET] Get All Cashiers
 // ? /api/cashiers/
-router.get('/', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/', verifyAdminOrCashier, async (req: Request, res: Response, next: NextFunction) => {
     try {
         const cashiers = await prisma.cashier.findMany({
             include: { user: true }
@@ -42,7 +45,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
 
 // * [GET] Get Single Cashier
 // ? /api/cashiers/:id
-router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/:id', verifyAdmin, async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
     try {
         const cashier = await prisma.cashier.findUnique({
@@ -78,7 +81,7 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
 
 // * [POST] Create Cashier
 // ? /api/cashiers/
-router.post('/', async (req: Request, res: Response, next: NextFunction) => {
+router.post('/', verifyAdmin, async (req: Request, res: Response, next: NextFunction) => {
     const { email, password, firstName, lastName } = req.body;
     try {
         // [1] Hash password
@@ -119,7 +122,7 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
 
 // * [PUT] Update Cashier
 // ? /api/cashiers/:id
-router.put('/:id', async (req: Request, res: Response, next: NextFunction) => {
+router.put('/:id', verifyAdmin, async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
     const { email, firstName, lastName } = req.body;
 
@@ -184,7 +187,7 @@ router.put('/:id', async (req: Request, res: Response, next: NextFunction) => {
 
 // * [DELETE] Delete Cashier (Soft Delete)
 // ? /api/cashiers/:id
-router.delete('/:id', async (req: Request, res: Response, next: NextFunction) => {
+router.delete('/:id', verifyAdmin, async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
     try {
         // [1] Fetch the user to ensure they exist

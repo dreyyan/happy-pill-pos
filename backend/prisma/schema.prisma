@@ -47,8 +47,11 @@ model User {
   cashier   Cashier?
   admin     Admin?
 
+  // ? Item relations
   itemsCreated Item[]  @relation("ItemsCreated")
   itemsUpdated Item[]  @relation("ItemsUpdated")
+
+  // ? InventoryLog relation
   inventoryLogsCreated InventoryLog[] @relation("InventoryLogCreatedBy")
 }
 
@@ -57,7 +60,7 @@ model Cashier {
   userId Int  @unique
   user   User @relation(fields: [userId], references: [id])
 
-  // ? Relations
+  // ? Transaction relation
   transactions Transaction[]
 }
 
@@ -72,9 +75,34 @@ model Category {
   name        String   @unique
   description String?
   isActive    Boolean  @default(true)
+
+  // ? Metadata
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+
+  // ? Subcategory relation
+  subcategories Subcategory[]
+
+  // ? Item relation
+  items       Item[]
+}
+
+model Subcategory {
+  id          Int       @id @default(autoincrement())
+  name        String    @unique
+  description String?
+  isActive    Boolean   @default(true)
+
+  // ? Metadata
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // ? Category relation
+  categoryId  Int
+  category    Category  @relation(fields: [categoryId], references: [id])
+
+  // ? Item relation
   items       Item[]
 }
 
@@ -87,7 +115,6 @@ model Item {
   price       Float
   cost        Float?
   quantity    Int       @default(0)
-  subcategory String?
   unit        String?
   reorderLevel Int?     @default(0)
   isActive     Boolean  @default(true)
@@ -95,6 +122,10 @@ model Item {
   // ? Category relation
   categoryId  Int?
   category    Category? @relation(fields: [categoryId], references: [id])
+
+  // ? Subcategory relation
+  subcategoryId Int?
+  subcategory   Subcategory? @relation(fields: [subcategoryId], references: [id])
 
   // ? Metadata
   createdAt   DateTime  @default(now())
@@ -147,7 +178,7 @@ model Transaction {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  // ? Relations
+  // ? Item relation
   items         TransactionItem[]
 }
 

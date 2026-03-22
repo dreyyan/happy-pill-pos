@@ -6,11 +6,14 @@ import { prisma } from '../lib/prisma';
 import { successResponse, errorResponse } from '../utils/response';
 import { info, error } from '../utils/logger';
 
+// [IMPORT] Middleware
+import { verifyAdminOrCashier } from '../middleware/authMiddleware';
+
 const router = Router();
 
 // * [GET] Sales Report
 // ? /api/reports/sales?start=2026-03-01&end=2026-03-23
-router.get('/sales', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/sales', verifyAdminOrCashier, async (req: Request, res: Response, next: NextFunction) => {
     const { start, end } = req.query;
 
     try {
@@ -64,7 +67,7 @@ router.get('/sales', async (req: Request, res: Response, next: NextFunction) => 
 
 // * [GET] Inventory Report
 // ? /api/reports/inventory
-router.get('/inventory', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/inventory', verifyAdminOrCashier, async (req: Request, res: Response, next: NextFunction) => {
     try {
         // [1] Fetch all items
         const items = await prisma.item.findMany({

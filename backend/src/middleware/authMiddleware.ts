@@ -88,4 +88,44 @@ const verifyCashier = async (req: Request, res: Response, next: NextFunction) =>
     }
 };
 
-export { verifyAdmin, verifyCashier };
+// * [MIDDLEWARE] Verify Admin or Cashier
+const verifyAdminOrCashier = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const userId = req.body.userId || req.headers['x-user-id'];
+        if (!userId) {
+            return res.status(401).json(errorResponse("User ID missing in request"));
+        }
+
+        const user = await prisma.user.findUnique({
+            where: { id: Number(userId) },
+            include: { admin: true, cashier: true }
+        });
+
+        // ! [ERROR] User not found or inactive
+        if (!user || !user.isActive) {
+            return res.status(403).json(errorResponse("User not found or inactive"));
+        }
+
+        // ! [ERROR] User is neither admin nor cashier
+        if ((user.role === 'ADMIN' && user.admin) || (user.role === 'CASHIER' && user.cashier)) {
+            info(`User verified: ${user.email} (${user.role})`);
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (req as any).user = user;
+            next();
+        } else {
+            return res.status(403).json(errorResponse("Unauthorized: Admin or Cashier only"));
+        }
+    } catch (err: unknown) {
+        let errorMessage = "Error verifying user";
+        if (err instanceof Error) {
+            errorMessage = err.message;
+            error(`verifyAdminOrCashier error: ${errorMessage}`);
+        } else {
+            error(`verifyAdminOrCashier unknown error: ${JSON.stringify(err)}`);
+        }
+        res.status(500).json(errorResponse(errorMessage));
+        next(err);
+    }
+};
+
+export { verifyAdmin, verifyCashier, verifyAdminOrCashier };

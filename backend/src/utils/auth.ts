@@ -1,6 +1,7 @@
 // [IMPORT] Libraries
 import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
+import jwt, { SignOptions } from 'jsonwebtoken';
+import type { StringValue } from 'ms';
 
 // [IMPORT] Types
 import { TokenPayload } from '../types';
@@ -14,8 +15,9 @@ const hashPassword = async (password: string, saltRounds: number) => {
 }
 
 // ? [HELPER] Generate JWT
-const generateToken = (payload: TokenPayload, expiresIn: string = '1h'): string => {
-    return jwt.sign(payload, JWT_SECRET, { expiresIn })
+const generateToken = (payload: TokenPayload, expiresIn: StringValue | number = '1h'): string => {
+    const options: SignOptions = { expiresIn };
+    return jwt.sign(payload, JWT_SECRET as jwt.Secret, options);
 }
 
 export { hashPassword, generateToken };

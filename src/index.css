@@ -1,145 +1,270 @@
 @import "tailwindcss";
 
+html, body {
+  min-height: 100%;
+}
+
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
 @layer base {
-  /** [BODY] */
-  body {
-    font-family: var(--font-body);
-  }
-  /** [HEADINGS] */
-  h1, h2, h3, h4, h5, h6 {
-    font-family: var(--font-header);
-  }
+    /** [BODY] */
+    body {
+        font-family: var(--font-body);
+        background-color: var(--color-bg-200);
+    }
+    /** [HEADINGS] */
+    h1, h2, h3, h4, h5, h6 {
+        font-family: var(--font-header);
+    }
+
+    /** [H1] Page Title / Major Screen Heading */
+    h1 {
+        font-family: var(--font-h1);
+        font-weight: var(--font-weight-h1);
+        font-size: var(--text-h1);
+        line-height: var(--text-h1--line-height);
+    }
+
+    /** [H2] Section Heading */
+    h2 {
+        font-family: var(--font-h2);
+        font-weight: var(--font-weight-h2);
+        font-size: var(--text-h2);
+        line-height: var(--text-h2--line-height);
+    }
+
+    /** [H3] Subsection Heading */
+    h3 {
+        font-family: var(--font-h3);
+        font-weight: var(--font-weight-h3);
+        font-size: var(--text-h3);
+        line-height: var(--text-h3--line-height);
+    }
+
+    /** [H4] Card / Panel Heading */
+    h4 {
+        font-family: var(--font-h4);
+        font-weight: var(--font-weight-h4);
+        font-size: var(--text-h4);
+        line-height: var(--text-h4--line-height);
+    }
+
+    /** [H5] Minor Heading */
+    h5 {
+        font-family: var(--font-h5);
+        font-weight: var(--font-weight-h5);
+        font-size: var(--text-h5);
+        line-height: var(--text-h5--line-height);
+    }
+
+    /** [H6] Small Label Heading */
+    h6 {
+        font-family: var(--font-h6);
+        font-weight: var(--font-weight-h6);
+        font-size: var(--text-h6);
+        line-height: var(--text-h6--line-height);
+    }
 }
 
 @theme {
-  /** [FONTS] Font Families */
-  --font-header: "Poppins", sans-serif;
-  --font-body: "Inter", sans-serif;
+    /** [COLOR PALETTE] */
+    /* ===================================================== */
+    /* [PRIMARY] Retail Blue — Main Actions (Pay, Confirm)   */
+    /* ===================================================== */
+    --color-primary-50:  #EFF6FF;
+    --color-primary-100: #DBEAFE;
+    --color-primary-200: #BFDBFE;
+    --color-primary-300: #93C5FD;
+    --color-primary-400: #60A5FA;
+    --color-primary-500: #3B82F6;
+    --color-primary-600: #2563EB; /* Main */
+    --color-primary-700: #1D4ED8;
+    --color-primary-800: #1E40AF;
+    --color-primary-900: #1E3A8A;
+    --color-primary-950: #172554;
 
-  /** [H1] Page Title / Major Screen Heading */
-  --text-h1: 24px;
-  --text-h1--line-height: 1.2;
-  --font-h1: var(--font-header);
-  --font-weight-h1: 700;
+    /* ===================================================== */
+    /* [SECONDARY] Warm Amber — Highlights / Totals / Notice */
+    /* ===================================================== */
+    --color-secondary-50:  #FFFBEB;
+    --color-secondary-100: #FEF3C7;
+    --color-secondary-200: #FDE68A;
+    --color-secondary-300: #FCD34D;
+    --color-secondary-400: #FBBF24;
+    --color-secondary-500: #F59E0B;
+    --color-secondary-600: #D97706; /* Main */
+    --color-secondary-700: #B45309;
+    --color-secondary-800: #92400E;
+    --color-secondary-900: #78350F;
+    --color-secondary-950: #451A03;
 
-  /** [H2] Section Heading */
-  --text-h2: 20px;
-  --text-h2--line-height: 1.25;
-  --font-h2: var(--font-header);
-  --font-weight-h2: 600;
 
-  /** [H3] Subsection Heading */
-  --text-h3: 18px;
-  --text-h3--line-height: 1.3;
-  --font-h3: var(--font-header);
-  --font-weight-h3: 600;
+    /* ===================================================== */
+    /* [BACKGROUND] Neutral Cool Gray — Clean POS Surface    */
+    /* ===================================================== */
+    --color-bg-50:  #F8FAFC;
+    --color-bg-100: #F1F5F9;
+    --color-bg-200: #E2E8F0;
+    --color-bg-300: #CBD5E1;
+    --color-bg-400: #94A3B8;
+    --color-bg-500: #64748B;
+    --color-bg-600: #475569;
+    --color-bg-700: #334155;
+    --color-bg-800: #1E293B;
+    --color-bg-900: #0F172A;
+    --color-bg-950: #020617;
 
-  /** [H4] Card Title / Panel Heading */
-  --text-h4: 16px;
-  --text-h4--line-height: 1.35;
-  --font-h4: var(--font-header);
-  --font-weight-h4: 500;
+    /* ===================================================== */
+    /* [TEXT] Neutral Slate — Excellent Readability          */
+    /* ===================================================== */
+    --color-text-50:  #F8FAFC;
+    --color-text-100: #F1F5F9;
+    --color-text-200: #E2E8F0;
+    --color-text-300: #CBD5E1;
+    --color-text-400: #94A3B8;
+    --color-text-500: #64748B;
+    --color-text-600: #475569;
+    --color-text-700: #334155;
+    --color-text-800: #1E293B;
+    --color-text-900: #0F172A; /* Main */
+    --color-text-950: #020617;
 
-  /** [H5] Minor Heading */
-  --text-h5: 14px;
-  --text-h5--line-height: 1.4;
-  --font-h5: var(--font-header);
-  --font-weight-h5: 500;
+    /* Shadows (subtle) */
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow:    0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
 
-  /** [H6] Small Label Heading */
-  --text-h6: 13px;
-  --text-h6--line-height: 1.4;
-  --font-h6: var(--font-header);
-  --font-weight-h6: 500;
+    /** [FONTS] Font Families */
+    --font-header: "Poppins", sans-serif;
+    --font-body: "Inter", sans-serif;
 
-  /** [APP] Top Bar / Screen Title */
-  --text-app-title: 20px;
-  --text-app-title--line-height: 1.2;
-  --font-app-title: var(--font-header);
-  --font-weight-app-title: 600;
+    /** [H1] Page Title / Major Screen Heading */
+    --text-h1: 24px;
+    --text-h1--line-height: 1.2;
+    --font-h1: var(--font-header);
+    --font-weight-h1: 700;
 
-  /** [SECTION] Section Headers (Menu, Orders, Cart) */
-  --text-section-title: 16px;
-  --text-section-title--line-height: 1.3;
-  --font-section-title: var(--font-header);
-  --font-weight-section-title: 500;
+    /** [H2] Section Heading */
+    --text-h2: 20px;
+    --text-h2--line-height: 1.25;
+    --font-h2: var(--font-header);
+    --font-weight-h2: 600;
 
-  /** [ITEM] Product / Card Title */
-  --text-item-title: 15px;
-  --text-item-title--line-height: 1.35;
-  --font-item-title: var(--font-body);
-  --font-weight-item-title: 600;
+    /** [H3] Subsection Heading */
+    --text-h3: 18px;
+    --text-h3--line-height: 1.3;
+    --font-h3: var(--font-header);
+    --font-weight-h3: 600;
 
-  /** [BODY] Default UI Text */
-  --text-body: 14px;
-  --text-body--line-height: 1.5;
-  --font-body-text: var(--font-body);
-  --font-weight-body: 400;
+    /** [H4] Card Title / Panel Heading */
+    --text-h4: 16px;
+    --text-h4--line-height: 1.35;
+    --font-h4: var(--font-header);
+    --font-weight-h4: 500;
 
-  /** [BUTTON] Button Text */
-  --text-button: 15px;
-  --text-button--line-height: 1.2;
-  --font-button: var(--font-body);
-  --font-weight-button: 500;
+    /** [H5] Minor Heading */
+    --text-h5: 14px;
+    --text-h5--line-height: 1.4;
+    --font-h5: var(--font-header);
+    --font-weight-h5: 500;
 
-  /** [BUTTON] Primary Actions (Pay, Confirm) */
-  --font-weight-button-primary: 600;
+    /** [H6] Small Label Heading */
+    --text-h6: 13px;
+    --text-h6--line-height: 1.4;
+    --font-h6: var(--font-header);
+    --font-weight-h6: 500;
 
-  /** [PRICE] Item Price */
-  --text-price: 18px;
-  --text-price--line-height: 1.2;
-  --font-price: var(--font-body);
-  --font-weight-price: 700;
+    /** [APP] Top Bar / Screen Title */
+    --text-app-title: 20px;
+    --text-app-title--line-height: 1.2;
+    --font-app-title: var(--font-header);
+    --font-weight-app-title: 600;
 
-  /** [TOTAL] Grand Total / Checkout Amount */
-  --text-total: 22px;
-  --text-total--line-height: 1.1;
-  --font-total: var(--font-header);
-  --font-weight-total: 700;
+    /** [SECTION] Section Headers (Menu, Orders, Cart) */
+    --text-section-title: 16px;
+    --text-section-title--line-height: 1.3;
+    --font-section-title: var(--font-header);
+    --font-weight-section-title: 500;
 
-  /** [INPUT] Input / Search Text */
-  --text-input: 15px;
-  --text-input--line-height: 1.4;
-  --font-input: var(--font-body);
-  --font-weight-input: 400;
+    /** [ITEM] Product / Card Title */
+    --text-item-title: 15px;
+    --text-item-title--line-height: 1.35;
+    --font-item-title: var(--font-body);
+    --font-weight-item-title: 600;
 
-  /** [LABEL] Form Labels */
-  --text-label: 13px;
-  --text-label--line-height: 1.3;
-  --font-label: var(--font-body);
-  --font-weight-label: 500;
+    /** [BODY] Default UI Text */
+    --text-body: 14px;
+    --text-body--line-height: 1.5;
+    --font-body-text: var(--font-body);
+    --font-weight-body: 400;
 
-  /** [CAPTION] Small / Meta Text */
-  --text-caption: 12px;
-  --text-caption--line-height: 1.4;
-  --font-caption: var(--font-body);
-  --font-weight-caption: 400;
+    /** [BUTTON] Button Text */
+    --text-button: 15px;
+    --text-button--line-height: 1.2;
+    --font-button: var(--font-body);
+    --font-weight-button: 500;
 
-  /** [BADGE] Tags / Status Chips */
-  --text-badge: 12px;
-  --text-badge--line-height: 1.2;
-  --font-badge: var(--font-body);
-  --font-weight-badge: 600;
+    /** [BUTTON] Primary Actions (Pay, Confirm) */
+    --font-weight-button-primary: 600;
 
-  /** [TABLE] Table Typography */
-  --text-table-header: 13px;
-  --font-table-header: var(--font-body);
-  --font-weight-table-header: 600;
-  --text-table-cell: 14px;
-  --font-table-cell: var(--font-body);
-  --font-weight-table-cell: 400;
+    /** [PRICE] Item Price */
+    --text-price: 18px;
+    --text-price--line-height: 1.2;
+    --font-price: var(--font-body);
+    --font-weight-price: 700;
+
+    /** [TOTAL] Grand Total / Checkout Amount */
+    --text-total: 22px;
+    --text-total--line-height: 1.1;
+    --font-total: var(--font-header);
+    --font-weight-total: 700;
+
+    /** [INPUT] Input / Search Text */
+    --text-input: 15px;
+    --text-input--line-height: 1.4;
+    --font-input: var(--font-body);
+    --font-weight-input: 400;
+
+    /** [LABEL] Form Labels */
+    --text-label: 13px;
+    --text-label--line-height: 1.3;
+    --font-label: var(--font-body);
+    --font-weight-label: 500;
+
+    /** [CAPTION] Small / Meta Text */
+    --text-caption: 12px;
+    --text-caption--line-height: 1.4;
+    --font-caption: var(--font-body);
+    --font-weight-caption: 400;
+
+    /** [BADGE] Tags / Status Chips */
+    --text-badge: 12px;
+    --text-badge--line-height: 1.2;
+    --font-badge: var(--font-body);
+    --font-weight-badge: 600;
+
+    /** [TABLE] Table Typography */
+    --text-table-header: 13px;
+    --font-table-header: var(--font-body);
+    --font-weight-table-header: 600;
+    --text-table-cell: 14px;
+    --font-table-cell: var(--font-body);
+    --font-weight-table-cell: 400;
 }
 
 /* Responsive overrides — must live outside @theme */
 @media (min-width: 768px) {
-  :root {
-    --text-h1: 28px;
-    --text-h2: 22px;
-    --text-app-title: 24px;
-    --text-section-title: 18px;
-    --text-item-title: 16px;
-    --text-body: 15px;
-    --text-price: 20px;
-    --text-total: 26px;
-  }
+    :root {
+        --text-h1: 28px;
+        --text-h2: 22px;
+        --text-app-title: 24px;
+        --text-section-title: 18px;
+        --text-item-title: 16px;
+        --text-body: 15px;
+        --text-price: 20px;
+        --text-total: 26px;
+    }
 }

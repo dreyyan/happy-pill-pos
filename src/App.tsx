@@ -4,6 +4,7 @@ import { Routes, Route, Navigate } from "react-router-dom";
 
 // [IMPORT] Routes
 import AdminLogin from "./pages/auth/AdminLogin";
+import CashierLogin from "./pages/auth/CashierLogin";
 
 function App() {
   return (
@@ -12,6 +13,7 @@ function App() {
 
         {/* Authentication */}
         <Route path="/login/admin" element={<AdminLogin/>} />
+        <Route path="/login/cashier" element={<CashierLogin/>} />
     </Routes>
   );
 }

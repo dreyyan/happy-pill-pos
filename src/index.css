@@ -133,6 +133,21 @@ html, body {
     --color-green-950: #022C1A;
 
     /* ===================================================== */
+    /* [RED] Error / Destructive Actions / Alerts */
+    /* ===================================================== */
+    --color-red-50:  #FEF2F2;
+    --color-red-100: #FEE2E2;
+    --color-red-200: #FECACA;
+    --color-red-300: #FCA5A5;
+    --color-red-400: #F87171;
+    --color-red-500: #EF4444;  /* Main */
+    --color-red-600: #DC2626;
+    --color-red-700: #B91C1C;
+    --color-red-800: #991B1B;
+    --color-red-900: #7F1D1D;
+    --color-red-950: #450A0A;
+
+    /* ===================================================== */
     /* [BACKGROUND] Neutral Cool Gray — Clean POS Surface    */
     /* ===================================================== */
     --color-bg-50:  #F8FAFC;

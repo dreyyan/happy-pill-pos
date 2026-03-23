@@ -226,11 +226,6 @@ router.put('/profile', verifyAdmin, async (req: Request, res: Response, next: Ne
         if (firstName && firstName !== existingUser.firstName) updateData.firstName = firstName;
         if (lastName && lastName !== existingUser.lastName) updateData.lastName = lastName;
 
-        // ! [ERROR] No actual changes detected
-        if (Object.keys(updateData).length === 0) {
-            return res.status(400).json(errorResponse("No changes detected to update"));
-        }
-
         // [4] Update admin user
         const updatedUser = await prisma.user.update({
             where: { id: Number(currentUserId) },

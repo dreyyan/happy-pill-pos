@@ -224,4 +224,61 @@ router.delete('/:id', verifyAdmin, async (req: Request, res: Response, next: Nex
     }
 });
 
+// * [DELETE] Hard Delete Cashier
+// ? /api/cashiers/:id/hard
+router.delete('/:id/hard', verifyAdmin, async (req: Request, res: Response, next: NextFunction) => {
+    const { id } = req.params;
+
+    try {
+        // [1] Fetch the user to ensure they exist
+        const existingUser = await prisma.user.findUnique({
+            where: { id: Number(id) },
+            include: { cashier: true }
+        });
+
+        // ! [ERROR] Cashier not found
+        if (!existingUser || existingUser.role !== 'CASHIER') {
+            return res.status(404).json(errorResponse("Cashier not found"));
+        }
+
+        // [2] Delete related cashier record first
+        await prisma.cashier.delete({
+            where: { userId: Number(id) }
+        });
+
+        // [3] Check if cashier has related transactions
+        const hasTransactions = await prisma.transaction.findFirst({
+            where: { cashierId: Number(id) }
+        });
+
+        if (hasTransactions) {
+            return res.status(400).json(errorResponse(
+                "Cannot hard delete cashier with existing transactions. Use soft delete instead."
+            ));
+        }
+
+        // [4] Delete the user
+        await prisma.user.delete({
+            where: { id: Number(id) }
+        });
+
+        // * [SUCCESS] Cashier hard-deleted successfully
+        info(`Cashier with id ${id} hard-deleted successfully`);
+        res.json(successResponse("Cashier permanently deleted successfully", null));
+
+    } catch (err: unknown) {
+        let errorMessage = "An unexpected error occurred while hard-deleting cashier";
+
+        if (err instanceof Error) {
+            errorMessage = err.message;
+            error(`Error hard-deleting cashier with id ${id}: ${errorMessage}`);
+        } else {
+            error(`Error hard-deleting cashier with id ${id}: ${JSON.stringify(err)}`);
+        }
+
+        res.status(500).json(errorResponse(errorMessage));
+        next(err);
+    }
+});
+
 export const cashiersRoutes = router;

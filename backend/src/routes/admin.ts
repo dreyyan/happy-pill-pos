@@ -66,6 +66,60 @@ router.get('/dashboard/summary', verifyAdmin, async (req: Request, res: Response
     }
 });
 
+// * [GET] Get Current Admin Profile
+// ? /api/admin/profile
+router.get('/profile', verifyAdmin, async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        // [1] Fetch current user from middleware
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const currentUserId = (req as any).user?.userId;
+
+        // ! [ERROR] Token/user missing
+        if (!currentUserId) {
+            return res.status(401).json(errorResponse("Unauthorized: No valid token provided"));
+        }
+
+        // [2] Fetch admin profile safely
+        const adminUser = await prisma.user.findUnique({
+            where: { id: Number(currentUserId) },
+            include: { admin: true }
+        });
+
+        // ! [ERROR] Admin profile not found
+        if (!adminUser || adminUser.role !== 'ADMIN') {
+            return res.status(404).json(errorResponse("Admin profile not found"));
+        }
+
+        // [3] Remove password before sending response
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { password: _, ...userWithoutPassword } = adminUser;
+
+        // [4] Prepare profile response
+        const adminProfile = {
+            id: userWithoutPassword.id,
+            email: userWithoutPassword.email,
+            firstName: userWithoutPassword.firstName,
+            lastName: userWithoutPassword.lastName,
+            name: `${userWithoutPassword.firstName} ${userWithoutPassword.lastName}`,
+            role: userWithoutPassword.role,
+            isActive: userWithoutPassword.isActive,
+            admin: userWithoutPassword.admin
+        };
+
+        // * [SUCCESS] Admin profile fetched
+        info(`Admin profile fetched for user id ${currentUserId}`);
+        res.json(successResponse("Admin profile fetched successfully", adminProfile));
+
+    } catch (err: unknown) {
+        let errorMessage = "An unexpected error occurred while fetching admin profile";
+        if (err instanceof Error) errorMessage = err.message;
+
+        error(`Error fetching admin profile: ${errorMessage}`);
+        res.status(500).json(errorResponse(errorMessage));
+        next(err);
+    }
+});
+
 // * [GET] Get All Admins
 // ? /api/admin/
 router.get('/', verifyAdmin, async (req: Request, res: Response, next: NextFunction) => {

@@ -113,7 +113,7 @@ router.post('/login', async (req: Request, res: Response, next: NextFunction) =>
         } else {
             error(`Error logging in admin with email ${email}: ${JSON.stringify(err)}`);
         }
-        res.json(errorResponse(errorMessage));
+        res.status(500).json(errorResponse(errorMessage));
 
         // ! [ERROR] Forward to global error handler
         next(err);

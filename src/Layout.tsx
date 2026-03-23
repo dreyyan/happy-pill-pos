@@ -4,12 +4,11 @@ import { useAuth } from "./context/useAuth";
 
 // [IMPORT] Components
 import Header from "./components/Header";
-import Footer from "./components/Footer";
 import Modal from "./components/Modal";
 
 export default function Layout() {
   const location = useLocation();
-  const hideHeaderFooter = ["/login", "/login/adviser", "/forgot-password"].some(path =>
+  const hideHeader = ["/login", "/login/adviser", "/forgot-password"].some(path =>
   location.pathname.startsWith(path)
   );
 
@@ -17,11 +16,10 @@ export default function Layout() {
 
   return (
     <div className="flex flex-col min-h-screen flex-1">
-      {!hideHeaderFooter && <Header />}
+      {!hideHeader && <Header />}
       <main className="flex-grow">
         <Outlet />
       </main>
-      {!hideHeaderFooter && <Footer />}
 
       {/* Token Expired Modal using Custom Modal */}
       {showTokenExpiredModal && (

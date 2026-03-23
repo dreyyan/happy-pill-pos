@@ -45,7 +45,11 @@ const verifyAdmin = async (req: Request, res: Response, next: NextFunction) => {
         // [SUCCESS] Attach user to request and continue
         info(`Admin verified: ${user.email}`);
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (req as any).user = user;
+        (req as any).user = {
+            userId: user.id,
+            role: 'ADMIN',
+            email: user.email
+        };
         next();
     } catch (err: unknown) {
         let errorMessage = "Error verifying admin";

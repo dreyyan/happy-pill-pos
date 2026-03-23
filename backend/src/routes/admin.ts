@@ -44,7 +44,10 @@ router.get('/dashboard/summary', verifyAdmin, async (req: Request, res: Response
 
         // [4] Prepare response
         const dashboardSummary = {
-            adminProfile: { name: `${adminUser.firstName} ${adminUser.lastName}` },
+            adminProfile: {
+                name: `${adminUser.firstName} ${adminUser.lastName}`,
+                email: adminUser.email,
+            },
             totalCashiers,
             totalItems,
             totalTransactions,

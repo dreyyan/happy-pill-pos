@@ -81,7 +81,7 @@ router.post('/login', async (req: Request, res: Response, next: NextFunction) =>
             return res.status(404).json(await errorResponse("Admin not found in the database"));
 
         // [3] Check if password exists
-        const passwordMatches = bcrypt.compare(password, admin.user.password);
+        const passwordMatches = await bcrypt.compare(password, admin.user.password);
 
         // ! [ERROR] Incorrect password
         if (!passwordMatches)

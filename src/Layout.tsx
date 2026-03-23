@@ -9,10 +9,9 @@ import Modal from "./components/Modal";
 
 export default function Layout() {
   const location = useLocation();
-  const hideHeaderFooter =
-    location.pathname === "/login/" ||
-    location.pathname === "/login/adviser" ||
-    location.pathname === "/forgot-password";
+  const hideHeaderFooter = ["/login", "/login/adviser", "/forgot-password"].some(path =>
+  location.pathname.startsWith(path)
+  );
 
   const { showTokenExpiredModal, setShowTokenExpiredModal, logout } = useAuth();
 

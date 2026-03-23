@@ -78,7 +78,7 @@ const Header = () => {
         </div>
 
         {/* [SIDEBAR MENU] Links */}
-        <nav className="flex flex-col p-4 gap-1">
+        <nav className="flex flex-col p-4 gap-2">
           <SidebarLink
             icon="/dashboard-filled-icon.svg"
             text="Dashboard"

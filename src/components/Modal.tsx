@@ -62,18 +62,18 @@ const Modal = ({
 
   // [STYLES] border + text colors
   const borderColors = {
-    default: "border-t-[var(--color-primary-500)]",
-    error: "border-t-[var(--color-red-600)]",
-    success: "border-t-[var(--color-accent-500)]",
-    info: "border-t-[var(--color-primary-700)]",
-    warning: "border-t-[var(--color-secondary-600)]",
+    default: "border-t-primary-500",
+    error: "border-t-red-500",
+    success: "border-t-green-500",
+    info: "border-t-primary-700",
+    warning: "border-t-secondary-600",
   };
   const textColors = {
-    default: "text-[var(--color-primary-500)]",
-    error: "text-[var(--color-red-600)]",
-    success: "text-[var(--color-accent-600)]",
-    info: "text-[var(--color-primary-700)]",
-    warning: "text-[var(--color-secondary-500)]",
+    default: "text-primary-500",
+    error: "text-red-600",
+    success: "text-green-600",
+    info: "text-primary-700",
+    warning: "text-secondary-500",
   };
   const borderClass = borderColors[type];
   const textClass = textColors[type];

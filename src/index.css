@@ -102,6 +102,35 @@ html, body {
     --color-secondary-900: #78350F;
     --color-secondary-950: #451A03;
 
+    /* ===================================================== */
+    /* [PURPLE] Accent / Items */
+    /* ===================================================== */
+    --color-purple-50:  #F5F3FF;
+    --color-purple-100: #EDE9FE;
+    --color-purple-200: #DDD6FE;
+    --color-purple-300: #C4B5FD;
+    --color-purple-400: #A78BFA;
+    --color-purple-500: #8B5CF6;
+    --color-purple-600: #7C3AED; /* Main */
+    --color-purple-700: #6D28D9;
+    --color-purple-800: #5B21B6;
+    --color-purple-900: #4C1D95;
+    --color-purple-950: #2E1062;
+
+    /* ===================================================== */
+    /* [GREEN] Success / Inventory / Positive Indicators */
+    /* ===================================================== */
+    --color-green-50:  #ECFDF5;
+    --color-green-100: #D1FAE5;
+    --color-green-200: #A7F3D0;
+    --color-green-300: #6EE7B7;
+    --color-green-400: #34D399;
+    --color-green-500: #10B981;
+    --color-green-600: #059669; /* Main */
+    --color-green-700: #047857;
+    --color-green-800: #065F46;
+    --color-green-900: #064E3B;
+    --color-green-950: #022C1A;
 
     /* ===================================================== */
     /* [BACKGROUND] Neutral Cool Gray — Clean POS Surface    */

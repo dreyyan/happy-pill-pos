@@ -44,7 +44,7 @@ const DashboardButton: React.FC<DashboardButtonProps> = ({
         px-4 py-3
       "
     >
-      {/* Icon */}
+      {/* [UI] Icon */}
       {iconSrc && (
         <img
           src={iconSrc}
@@ -53,7 +53,7 @@ const DashboardButton: React.FC<DashboardButtonProps> = ({
         />
       )}
 
-      {/* Text */}
+      {/* [UI] Text */}
       <p className="text-button font-button-primary text-text-50 mt-2 sm:mt-0 text-center sm:text-left truncate">
         {text}
       </p>

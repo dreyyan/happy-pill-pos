@@ -1,24 +1,29 @@
 // [IMPORT] React
 import React from "react";
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
 
 // [IMPORT] Pages
-import AdminLogin from "./pages/auth/AdminLogin";
-import CashierLogin from "./pages/auth/CashierLogin";
-import AdminDashboard from "./pages/admin/AdminDashboard";
-import CashierDashboard from "./pages/admin/CashierDashboard";
+import Home from "./pages/Home";
 
-// Layout
-import Layout from "./Layout";
-import AdminSettings from "./pages/admin/AdminSettings";
-import AdminProfile from "./pages/admin/AdminProfile";
-import AdminCashiers from "./pages/admin/AdminCashiers";
-import AdminItems from "./pages/admin/AdminItems";
+// [IMPORT] Pages: Admin
+import AdminLogin from "./pages/auth/AdminLogin";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminOrders from "./pages/admin/AdminOrders";
 import AdminTransactions from "./pages/admin/AdminTransactions";
 import AdminInventory from "./pages/admin/AdminInventory";
+import AdminItems from "./pages/admin/AdminItems";
 import AdminCategories from "./pages/admin/AdminCategories";
-import AdminOrders from "./pages/admin/AdminOrders";
-import Home from "./pages/Home";
+import AdminCashiers from "./pages/admin/AdminCashiers";
+import AdminProfile from "./pages/admin/AdminProfile";
+import AdminSettings from "./pages/admin/AdminSettings";
+
+// [IMPORT] Pages: Cashier
+import CashierLogin from "./pages/auth/CashierLogin";
+import CashierDashboard from "./pages/admin/CashierDashboard";
+
+// [IMPORT] Context & Layout
+import PrivateRoute from "./context/PrivateRoute";
+import Layout from "./Layout";
 
 function App() {
   return (
@@ -32,23 +37,89 @@ function App() {
       {/* Protected Routes */}
       <Route element={<Layout />}>
         {/* [ROUTES] Admin */}
-        <Route path="/admin/dashboard" element={<AdminDashboard />} />
-        <Route path="/admin/cashiers" element={<AdminCashiers />} />
-        <Route path="/admin/items" element={<AdminItems />} />
-        <Route path="/admin/transactions" element={<AdminTransactions />} />
-        <Route path="/admin/orders" element={<AdminOrders />} />
-        <Route path="/admin/inventory" element={<AdminInventory />} />
-        <Route path="/admin/categories" element={<AdminCategories />} />
+        <Route
+          path="/admin/dashboard"
+          element={
+            <PrivateRoute>
+              <AdminDashboard />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/admin/cashiers"
+          element={
+            <PrivateRoute>
+              <AdminCashiers />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/admin/items"
+          element={
+            <PrivateRoute>
+              <AdminItems />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/admin/transactions"
+          element={
+            <PrivateRoute>
+              <AdminTransactions />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/admin/orders"
+          element={
+            <PrivateRoute>
+              <AdminOrders />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/admin/inventory"
+          element={
+            <PrivateRoute>
+              <AdminInventory />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/admin/categories"
+          element={
+            <PrivateRoute>
+              <AdminCategories />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/admin/profile"
+          element={
+            <PrivateRoute>
+              <AdminProfile />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/admin/settings"
+          element={
+            <PrivateRoute>
+              <AdminSettings />
+            </PrivateRoute>
+          }
+        />
 
-        <Route path="/admin/profile" element={<AdminProfile />} />
-        <Route path="/admin/settings" element={<AdminSettings />} />
-        
         {/* [ROUTES] Cashier */}
-        <Route path="/cashier/dashboard" element={<CashierDashboard />} />
+        <Route
+          path="/cashier/dashboard"
+          element={
+            <PrivateRoute>
+              <CashierDashboard />
+            </PrivateRoute>
+          }
+        />
       </Route>
-
-      {/* [OPTIONAL] Catch all/404 redirect */}
-      {/* <Route path="*" element={<Navigate to="/login/admin" replace />} /> */}
     </Routes>
   );
 }

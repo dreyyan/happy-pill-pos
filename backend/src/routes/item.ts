@@ -9,7 +9,118 @@ import { error, info } from '../utils/logger';
 // [IMPORT] Middleware
 import { verifyAdmin, verifyAdminOrCashier } from '../middleware/authMiddleware';
 
+// [IMPORT] CSV Parser
+import multer from 'multer';
+import { parse } from "csv-parse/sync";
+import fs from 'fs';
+
+const upload = multer({ dest: 'uploads/' });
+
 const router = Router();
+
+// * [POST] Import Items via CSV
+// ? /api/items/import-items
+router.post(
+  "/import-items",
+  verifyAdmin,
+  upload.single("file"),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      if (!req.file) return res.status(400).json(errorResponse("CSV file is required"));
+
+      // [1] Read file content
+      const fileContent = fs.readFileSync(req.file.path, "utf-8");
+      info(`[CSV IMPORT] File read successfully:\n${fileContent}`);
+
+      // [2] Parse CSV synchronously with tab delimiter
+      const records = parse(fileContent, {
+        columns: true,
+        skip_empty_lines: true,
+        trim: true,
+        delimiter: "," // use ',' if your CSV is comma-separated; use '\t' for tabs
+      });
+      info(`[CSV IMPORT] Parsed ${records.length} records`);
+
+      let createdCount = 0;
+
+      // [3] Process each record
+      for (let i = 0; i < records.length; i++) {
+        const row = records[i];
+        info(`[CSV IMPORT] Processing row ${i + 1}:`, row);
+
+        const name = row["Name"]?.trim();
+        const sku = row["SKU"]?.trim();
+        const price = parseFloat(row["Selling Price"]);
+        const cost = parseFloat(row["Cost"]);
+        const quantity = parseInt(row["Quantity"]) || 0;
+        const categoryName = row["Category"]?.trim();
+        const subcategoryName = row["Subcategory"]?.trim();
+        const unit = row["Unit"]?.trim();
+
+        if (!name || !sku || isNaN(price) || !categoryName || !subcategoryName) {
+          info(`[CSV IMPORT] Skipping row ${i + 1}: missing required fields`);
+          continue;
+        }
+
+        // [4] Check if item SKU already exists
+        const existing = await prisma.item.findUnique({ where: { sku } });
+        if (existing) {
+          info(`[CSV IMPORT] Skipping row ${i + 1}: SKU ${sku} already exists`);
+          continue;
+        }
+
+        // [5] Fetch category
+        let category = await prisma.category.findUnique({ where: { name: categoryName } });
+        if (!category) {
+          category = await prisma.category.create({ data: { name: categoryName } });
+          info(`[CSV IMPORT] Created new category: ${categoryName}`);
+        }
+
+        // [6] Fetch subcategory
+        let subcategory = await prisma.subcategory.findUnique({
+          where: { name_categoryId: { name: subcategoryName, categoryId: category.id } }
+        });
+        if (!subcategory) {
+          subcategory = await prisma.subcategory.create({
+            data: { name: subcategoryName, categoryId: category.id }
+          });
+          info(`[CSV IMPORT] Created new subcategory: ${subcategoryName}`);
+        }
+
+        // [7] Create item
+        await prisma.item.create({
+          data: {
+            name,
+            sku,
+            price,
+            cost,
+            quantity,
+            unit,
+            categoryId: category.id,
+            subcategoryId: subcategory.id,
+            isActive: true,
+            createdById: (req as any).user.userId
+          }
+        });
+
+        createdCount++;
+      }
+
+      // [8] Delete uploaded file
+      fs.unlinkSync(req.file.path);
+      info(`[CSV IMPORT] Deleted uploaded file`);
+
+      info(`[INFO] Imported ${createdCount} items from CSV`);
+      res.json(successResponse(`Successfully imported ${createdCount} items`, { createdCount }));
+    } catch (err: unknown) {
+      let errorMessage = "Error importing items";
+      if (err instanceof Error) errorMessage = err.message;
+      error(`[CSV IMPORT ERROR] ${errorMessage}`);
+      res.status(500).json(errorResponse(errorMessage));
+      next(err);
+    }
+  }
+);
 
 // * [GET] Get All Items
 // ? /api/items/
@@ -17,29 +128,33 @@ router.get('/', verifyAdminOrCashier, async (req: Request, res: Response, next: 
     try {
         const { search, category, isActive } = req.query;
 
-        // [1] Build filters
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const filters: any = {};
-        if (search) {
-            filters.OR = [
-                { name: { contains: String(search), mode: 'insensitive' } },
-                { sku: { contains: String(search), mode: 'insensitive' } },
-                { barcode: { contains: String(search), mode: 'insensitive' } }
-            ];
-        }
-        if (category) filters.category = String(category);
-        if (isActive !== undefined) filters.isActive = isActive === 'true';
 
-        // [2] Fetch items with only necessary info
+        // Search by name, sku, or barcode
+        if (search) {
+        filters.OR = [
+            { name: { contains: String(search), mode: "insensitive" } },
+            { sku:  { contains: String(search), mode: "insensitive" } },
+            { barcode: { contains: String(search), mode: "insensitive" } },
+        ];
+        }
+
+        // Filter by categoryId (not category object)
+        if (category) filters.categoryId = Number(category);
+
+        // Filter by active status
+        if (isActive !== undefined) filters.isActive = isActive === "true";
+
+        // Fetch items
         const items = await prisma.item.findMany({
-            where: filters,
-            include: {
-                category: true,
-                subcategory: true,
-                createdBy: { select: { id: true, email: true, firstName: true, lastName: true, role: true } },
-                updatedBy: { select: { id: true, email: true, firstName: true, lastName: true, role: true } },
-            },
-            orderBy: { name: 'asc' }
+        where: filters,
+        include: {
+            category: true,
+            subcategory: true,
+            createdBy: { select: { id: true, email: true, firstName: true, lastName: true, role: true } },
+            updatedBy: { select: { id: true, email: true, firstName: true, lastName: true, role: true } },
+        },
+        orderBy: { name: "asc" },
         });
 
         // * [SUCCESS] Return items

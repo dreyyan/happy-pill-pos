@@ -14,10 +14,10 @@ const PrimaryButton = (props: PrimaryButtonProps) => {
             onClick={props.onClick}
             disabled={props.disabled}
             style={props.color ? { backgroundColor: `#${props.color}` } : undefined}
-            className="flex justify-center items-center w-full py-2 rounded-md cursor-pointer text-button font-bold bg-primary-600 text-text-50 transition-all duration-200 hover:opacity-90 disabled:opacity-50"
+            className="flex justify-center items-center gap-x-2 w-full py-3 rounded-md cursor-pointer text-button font-bold bg-primary-600 text-text-50 transition-all duration-200 hover:opacity-90 disabled:opacity-50"
         >   
             { props.iconSrc && (
-                <img src={props.iconSrc} className="" />
+                <img src={props.iconSrc} className="size-4" />
             )}
             <p className="button text-text-on-primary">{props.text}</p>
         </button>

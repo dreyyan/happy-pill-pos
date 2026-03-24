@@ -10,6 +10,13 @@ import CashierDashboard from "./pages/admin/CashierDashboard";
 
 // Layout
 import Layout from "./Layout";
+import AdminSettings from "./pages/admin/AdminSettings";
+import AdminProfile from "./pages/admin/AdminProfile";
+import AdminCashiers from "./pages/admin/AdminCashiers";
+import AdminItems from "./pages/admin/AdminItems";
+import AdminTransactions from "./pages/admin/AdminTransactions";
+import AdminInventory from "./pages/admin/AdminInventory";
+import AdminCategories from "./pages/admin/AdminCategories";
 
 function App() {
   return (

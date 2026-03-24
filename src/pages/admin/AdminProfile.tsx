@@ -1,14 +1,14 @@
 // [IMPORT] Hooks
+import React from "react";
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../context/useAuth";
 
 // [IMPORT] Components
+import Modal from "../../components/Modal";
 import Skeleton from "../../components/Skeleton";
 import InputField from "../../components/InputField";
-import Modal from "../../components/Modal";
-import React from "react";
 
-// ?[INTERFACES]
+// ? [INTERFACES]
 interface AdminProfileData {
   id: number;
   email: string;
@@ -20,7 +20,6 @@ interface AdminProfileData {
   admin: { id: number; userId: number };
 }
 
-// ?[FORM INTERFACE]
 interface AdminForm {
   name: string;
   email: string;
@@ -31,11 +30,11 @@ interface AdminForm {
 }
 
 const AdminProfile = () => {
-  const navigate = useNavigate();
+  const { setShowTokenExpiredModal } = useAuth();
 
-  // [STATES]
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  // [STATES] Profile
   const [profile, setProfile] = useState<AdminProfileData | null>(null);
+  const [loading, setLoading] = useState(true);
   const [form, setForm] = useState<AdminForm>({
     name: "",
     email: "",
@@ -45,11 +44,12 @@ const AdminProfile = () => {
     isActive: true,
   });
   const [originalForm, setOriginalForm] = useState<AdminForm | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const totalPages = 2;
   const [isEditing, setIsEditing] = useState(false);
+  const totalPages = 2;
+
+
+  // [STATES] Modal
   const [showModal, setShowModal] = useState(false);
   const [modalTitle, setModalTitle] = useState("");
   const [modalMessage, setModalMessage] = useState("");
@@ -106,9 +106,14 @@ const AdminProfile = () => {
         body: JSON.stringify(form),
       });
 
+      // ! [ERROR] Expired token
+      if (res.status === 401) {
+        setShowTokenExpiredModal(true);
+        return;
+      }
+
       const data = await res.json();
 
-    
       // ! [ERROR] Backend failure response
       if (!data.success) {
         const cleanMessage = data.message?.replace(/^\[ERROR\]\s*/, "");
@@ -119,6 +124,7 @@ const AdminProfile = () => {
         return;
       }
 
+      // * [SUCCESS] Profile updated
       setProfile((prev) => ({ ...prev!, ...data.data }));
       setModalTitle("Success");
       setModalMessage("Profile updated successfully!");
@@ -128,6 +134,7 @@ const AdminProfile = () => {
       setOriginalForm(form);
 
     } catch (err) {
+      // ![ERROR] Network or server issue
       console.error(err);
       setModalTitle("Error");
       setModalMessage("Something went wrong while saving.");
@@ -142,12 +149,6 @@ const AdminProfile = () => {
   useEffect(() => {
     const fetchProfile = async () => {
       const token = localStorage.getItem("token");
-      if (!token) {
-        setIsAuthenticated(false);
-        setLoading(false);
-        return;
-      }
-
       try {
         const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/admin/profile`, {
           headers: { Authorization: `Bearer ${token}` },
@@ -155,13 +156,12 @@ const AdminProfile = () => {
         const data = await res.json();
 
         // ! [ERROR] Expired token
-        if (!data.success) {
-          localStorage.removeItem("token");
-          setIsAuthenticated(false);
-          setLoading(false);
+        if (res.status === 401) {
+          setShowTokenExpiredModal(true);
           return;
         }
 
+        // * [SUCCESS] Profile updated
         setProfile(data.data);
         setForm({
           name: data.data.name,
@@ -172,30 +172,26 @@ const AdminProfile = () => {
           isActive: data.data.isActive,
         });
         setOriginalForm({ ...form });
-        setIsAuthenticated(true);
 
       } catch (err) {
+        // ![ERROR] Network or server issue
         console.error(err);
         localStorage.removeItem("token");
-        setIsAuthenticated(false);
       } finally {
         setLoading(false);
       }
     };
 
     fetchProfile();
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [setShowTokenExpiredModal]);
 
-  // ? [EFFECT] Redirect if not authenticated
-  useEffect(() => {
-    if (isAuthenticated === false) navigate("/login/admin");
-  }, [isAuthenticated, navigate]);
-
-  if (loading || isAuthenticated === null) return <Skeleton />;
+  // ? [LOADING STATE]
+  if (loading) return <Skeleton />;
 
   return (
     <div className="py-6 px-4 flex flex-col items-center gap-y-4">
-      {/* Modal */}
+      {/* [COMPONENT] Modal */}
       {showModal && (
         <Modal
           isOpen={showModal}
@@ -207,48 +203,51 @@ const AdminProfile = () => {
         />
       )}
 
-      {/* Profile Form */}
+      {/* [SECTION] Profile */}
       <div className="w-full max-w-md bg-[var(--color-bg-100)] border border-[var(--color-bg-300)] rounded-lg shadow-sm p-5 space-y-3">
+        {/* [UI] Page Title */}
+        <h1 className="font-h2 font-extrabold text-text-900 mb-2">Profile</h1>
 
-        {/* Title of Information Category */}
-        <h1 className="font-h2 font-extrabold text-text-900 mb-2">
-            Profile
-        </h1>
-
+        {/* [SECTION] Page Subtitle */}
         <h3 className="text-text-700">
           {currentPage === 1 ? "Personal Information" : "Account Information"}
         </h3>
 
-        {/* Pagination */}
-        <div className="flex justify-between items-center space-x-4 mt-8">
+        {/* [SECCTION] Pagination */}
+        <div className="flex justify-between items-center space-x-4 mt-4">
+          {/* [BUTTON] Previous */}
           <button
             onClick={prevPage}
             disabled={currentPage === 1}
             className={`text-button px-3 py-2 rounded ${
-              currentPage === 1 ? "bg-gray-300 cursor-not-allowed" : "bg-primary-600 text-white hover:opacity-90"
+              currentPage === 1 ? "bg-gray-300 cursor-not-allowed" : "bg-primary-500 text-white hover:opacity-90"
             }`}
           >
             &lt; Prev
           </button>
+
+          {/* [UI] Current Page */}
           <span>Page {currentPage} of {totalPages}</span>
+
+          {/* [BUTTON] Next */}
           <button
             onClick={nextPage}
             disabled={currentPage === totalPages}
             className={`text-button px-3 py-2 rounded ${
-              currentPage === totalPages ? "bg-gray-300 cursor-not-allowed" : "bg-primary-600 text-white hover:opacity-90"
+              currentPage === totalPages ? "bg-gray-300 cursor-not-allowed" : "bg-primary-500 text-white hover:opacity-90"
             }`}
           >
             Next &gt;
           </button>
         </div>
 
-        <hr className="text-text-300 my-4"/>
+        <hr className="text-text-300 my-3"/>
 
-        {/* Edit / Save Buttons */}
-        <div className="flex justify-end gap-4">
+        {/* [BUTTON] Edit / Save */}
+        <div className="flex justify-end gap-3">
           <button
             onClick={toggleEdit}
-            className="font-semibold px-4 py-2 bg-primary-600 text-white rounded flex items-center gap-2"
+            className="text-button font-semibold px-4 py-2 bg-primary-700 text-white rounded flex items-center gap-2"
           >
             {isEditing ? "Cancel" : "Edit"}
             {!isEditing && <img src="/edit-icon.svg" alt="edit" className="size-4 object-contain" />}
@@ -257,17 +256,16 @@ const AdminProfile = () => {
           {isEditing && (
             <button
               onClick={handleSave}
-              className="px-4 py-2 font-semibold bg-green-600 text-white rounded"
+              className="px-4 py-1 font-semibold bg-green-600 text-white rounded"
             >
               Save
             </button>
           )}
         </div>
 
-        {/* Form Pages */}
+        {/* [SECTION] Form Pages */}
         {currentPage === 1 && (
           <div className="space-y-3">
-            <InputField label="Full Name" value={form.name} onChange={(e) => handleChange("name", e.target.value)} disabled={!isEditing} />
             <InputField label="First Name" value={form.firstName ?? ""} onChange={(e) => handleChange("firstName", e.target.value)} disabled={!isEditing} />
             <InputField label="Last Name" value={form.lastName ?? ""} onChange={(e) => handleChange("lastName", e.target.value)} disabled={!isEditing} />
           </div>
@@ -280,7 +278,6 @@ const AdminProfile = () => {
             <InputField label="Status" value={form.isActive ? "Active" : "Inactive"} onChange={() => {}} disabled={true} />
           </div>
         )}
-
       </div>
     </div>
   );

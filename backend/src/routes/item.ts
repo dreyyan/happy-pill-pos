@@ -34,24 +34,10 @@ router.get('/', verifyAdminOrCashier, async (req: Request, res: Response, next: 
         const items = await prisma.item.findMany({
             where: filters,
             include: {
-                createdBy: {
-                    select: {
-                        id: true,
-                        email: true,
-                        firstName: true,
-                        lastName: true,
-                        role: true,
-                    }
-                },
-                updatedBy: {
-                    select: {
-                        id: true,
-                        email: true,
-                        firstName: true,
-                        lastName: true,
-                        role: true,
-                    }
-                }
+                category: true,
+                subcategory: true,
+                createdBy: { select: { id: true, email: true, firstName: true, lastName: true, role: true } },
+                updatedBy: { select: { id: true, email: true, firstName: true, lastName: true, role: true } },
             },
             orderBy: { name: 'asc' }
         });
@@ -125,12 +111,26 @@ router.get('/:id', verifyAdminOrCashier, async (req: Request, res: Response, nex
 // * [POST] Create Item
 // ? /api/items/
 router.post('/', verifyAdmin, async (req: Request, res: Response, next: NextFunction) => {
-    const { name, description, sku, barcode, price, cost, quantity, category, unit, reorderLevel, isActive } = req.body;
+    const {
+        name,
+        description = "",
+        sku = "",
+        barcode = "",
+        price = 0,
+        cost = 0,
+        quantity = 0,
+        categoryId,
+        subcategoryId,
+        unit = "",
+        reorderLevel = 0,
+        isActive = true
+    } = req.body;
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const createdById = (req as any).user.id;
+    const createdById = (req as any).user?.id || 1; // fallback to 1 if somehow missing
 
     try {
+        // Create item
         const newItem = await prisma.item.create({
             data: {
                 name,
@@ -140,18 +140,29 @@ router.post('/', verifyAdmin, async (req: Request, res: Response, next: NextFunc
                 price,
                 cost,
                 quantity,
-                category,
+                categoryId,
+                subcategoryId,
                 unit,
                 reorderLevel,
                 isActive,
                 createdById,
+                updatedById: createdById, // set initially
+            },
+            include: {
+                category: true,
+                subcategory: true,
+                createdBy: {
+                    select: { id: true, email: true, firstName: true, lastName: true, role: true }
+                },
+                updatedBy: {
+                    select: { id: true, email: true, firstName: true, lastName: true, role: true }
+                }
             }
         });
 
         info(`Created new item: ${name}`);
         res.status(201).json(successResponse("Item created successfully", newItem));
     } catch (err: unknown) {
-        // ! [ERROR] Return error response
         let errorMessage = "An unexpected error occurred while creating item";
         if (err instanceof Error) {
             errorMessage = err.message;
@@ -160,8 +171,6 @@ router.post('/', verifyAdmin, async (req: Request, res: Response, next: NextFunc
             error(`Error creating item ${name}: ${JSON.stringify(err)}`);
         }
         res.status(500).json(errorResponse(errorMessage));
-
-        // ! [ERROR] Forward to global error handler
         next(err);
     }
 });
@@ -282,26 +291,23 @@ router.put('/:id', verifyAdmin, async (req: Request, res: Response, next: NextFu
     }
 });
 
-// * [DELETE] Delete Item (Soft Delete => isActive)
-// ? /api/items/:id
-router.delete('/:id', verifyAdmin, async (req: Request, res: Response, next: NextFunction) => {
-    const { id } = req.params;
+// * [DELETE] Delete All Items (Hard)
+// ? /api/items/hard-delete-all
+router.delete('/hard-delete-all', verifyAdmin, async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const deletedItem = await prisma.item.update({
-            where: { id: Number(id) },
-            data: { isActive: false }
-        });
+        // [1] Delete all items
+        const deletedItems = await prisma.item.deleteMany({});
 
-        info(`Soft-deleted item with id ${id}`);
-        res.json(successResponse("Item deleted successfully", deletedItem));
+        info(`Hard-deleted all items (${deletedItems.count} items)`);
+        res.json(successResponse("All items permanently deleted successfully", { count: deletedItems.count }));
     } catch (err: unknown) {
         // ! [ERROR] Return error response
-        let errorMessage = "An unexpected error occurred while deleting item";
+        let errorMessage = "An unexpected error occurred while hard-deleting all items";
         if (err instanceof Error) {
             errorMessage = err.message;
-            error(`Error deleting item with id ${id}: ${errorMessage}`);
+            error(`Error hard-deleting all items: ${errorMessage}`);
         } else {
-            error(`Error deleting item with id ${id}: ${JSON.stringify(err)}`);
+            error(`Error hard-deleting all items: ${JSON.stringify(err)}`);
         }
         res.status(500).json(errorResponse(errorMessage));
 
@@ -338,27 +344,32 @@ router.delete('/:id/hard', verifyAdmin, async (req: Request, res: Response, next
     }
 });
 
-// * [DELETE] Delete All Items (Hard)
-// ? /api/items/hard-delete-all
-router.delete('/hard-delete-all', verifyAdmin, async (req: Request, res: Response, next: NextFunction) => {
-    try {
-        // [1] Delete all items
-        const deletedItems = await prisma.item.deleteMany({});
+// * [DELETE] Delete Item (Soft Delete => isActive)
+// ? /api/items/:id
+router.delete('/:id', verifyAdmin, async (req: Request, res: Response, next: NextFunction) => {
+    const { id } = req.params;
+    
+    if (!id || isNaN(Number(id))) {
+        return res.status(400).json(errorResponse("Invalid item id"));
+    }
 
-        info(`Hard-deleted all items (${deletedItems.count} items)`);
-        res.json(successResponse("All items permanently deleted successfully", { count: deletedItems.count }));
+    try {
+        const deletedItem = await prisma.item.update({
+            where: { id: Number(id) },
+            data: { isActive: false }
+        });
+
+        info(`Soft-deleted item with id ${id}`);
+        res.json(successResponse("Item deleted successfully", deletedItem));
     } catch (err: unknown) {
-        // ! [ERROR] Return error response
-        let errorMessage = "An unexpected error occurred while hard-deleting all items";
+        let errorMessage = "An unexpected error occurred while deleting item";
         if (err instanceof Error) {
             errorMessage = err.message;
-            error(`Error hard-deleting all items: ${errorMessage}`);
+            error(`Error deleting item with id ${id}: ${errorMessage}`);
         } else {
-            error(`Error hard-deleting all items: ${JSON.stringify(err)}`);
+            error(`Error deleting item with id ${id}: ${JSON.stringify(err)}`);
         }
         res.status(500).json(errorResponse(errorMessage));
-
-        // ! [ERROR] Forward to global error handler
         next(err);
     }
 });

@@ -88,9 +88,15 @@ const Header = () => {
           {role === "Admin" && (
             <>
               <SidebarLink
-                icon="/cashier-filled-icon.svg"
-                text="Cashiers"
-                to="/admin/cashiers"
+                icon="/orders-filled-icon.svg"
+                text="Orders"
+                to="/admin/orders"
+                onClick={closeSidebar}
+              />
+              <SidebarLink
+                icon="/inventory-filled-icon.svg"
+                text="Inventory"
+                to="/admin/inventory"
                 onClick={closeSidebar}
               />
               <SidebarLink
@@ -106,9 +112,9 @@ const Header = () => {
                 onClick={closeSidebar}
               />
               <SidebarLink
-                icon="/inventory-filled-icon.svg"
-                text="Inventory"
-                to="/admin/inventory"
+                icon="/cashier-filled-icon.svg"
+                text="Cashiers"
+                to="/admin/cashiers"
                 onClick={closeSidebar}
               />
               <SidebarLink

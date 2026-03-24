@@ -18,11 +18,12 @@ import AdminTransactions from "./pages/admin/AdminTransactions";
 import AdminInventory from "./pages/admin/AdminInventory";
 import AdminCategories from "./pages/admin/AdminCategories";
 import AdminOrders from "./pages/admin/AdminOrders";
+import Home from "./pages/Home";
 
 function App() {
   return (
     <Routes>
-      <Route path="/" element={<Navigate to="/login/admin" replace />} />
+      <Route path="/" element={<Home />} />
 
       {/* Authentication */}
       <Route path="/login/admin" element={<AdminLogin />} />

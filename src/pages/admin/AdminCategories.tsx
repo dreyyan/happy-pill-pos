@@ -5,6 +5,7 @@ import { useAuth } from "../../context/useAuth";
 // [IMPORT] Components
 import PrimaryButton from "../../components/PrimaryButton";
 import CrudModal from "../../components/CrudModal";
+import Modal from "../../components/Modal";
 import React from "react";
 
 // ? [INTERFACES]
@@ -30,6 +31,11 @@ interface SubcategoryForm {
   categoryId?: number;
 }
 
+interface EditSubcategoryForm {
+  name: string;
+}
+
+// ?[CONSTANTS]
 const colorPalette = [
   "bg-primary-500",
   "bg-purple-500",
@@ -45,206 +51,226 @@ const AdminCategories = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // [STATE] Category Modal
+  // [STATE] Create Category Modal
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [creatingCategory, setCreatingCategory] = useState(false);
   const [categoryError, setCategoryError] = useState("");
-
   const initialCategoryForm: CategoryForm = { name: "", description: "" };
   const [categoryForm, setCategoryForm] = useState(initialCategoryForm);
 
-  // [STATE] Subcategory Modal
+  // [STATE] Edit Category Modal
+  const [showEditCategoryModal, setShowEditCategoryModal] = useState(false);
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+  const [updatingCategory, setUpdatingCategory] = useState(false);
+  const [editCategoryError, setEditCategoryError] = useState("");
+  const [editCategoryForm, setEditCategoryForm] = useState<CategoryForm>({ name: "", description: "" });
+
+  // [STATE] Create Subcategory Modal
   const [showSubModal, setShowSubModal] = useState(false);
   const [creatingSub, setCreatingSub] = useState(false);
   const [subError, setSubError] = useState("");
-
   const initialSubForm: SubcategoryForm = { name: "", categoryId: undefined };
   const [subForm, setSubForm] = useState(initialSubForm);
+
+  // [STATE] Edit Subcategory Modal
+  const [showEditSubModal, setShowEditSubModal] = useState(false);
+  const [editingSub, setEditingSub] = useState<Subcategory | null>(null);
+  const [updatingSub, setUpdatingSub] = useState(false);
+  const [editSubError, setEditSubError] = useState("");
+  const [editSubForm, setEditSubForm] = useState<EditSubcategoryForm>({ name: "" });
+
+  // [STATE] Delete Category Modal
+  const [showDeleteCategoryModal, setShowDeleteCategoryModal] = useState(false);
+  const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(null);
+
+  // [STATE] Delete Subcategory Modal
+  const [showDeleteSubModal, setShowDeleteSubModal] = useState(false);
+  const [subToDelete, setSubToDelete] = useState<{ sub: Subcategory; categoryId: number } | null>(null);
 
   // *[EFFECT] Fetch categories
   useEffect(() => {
     const fetchCategories = async () => {
       setLoading(true);
       setError(null);
-
       try {
         const token = localStorage.getItem("token");
-
         const res = await fetch(
           `${import.meta.env.VITE_API_BASE_URL}/api/categories`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
-
-        if (res.status === 401) {
-          setShowTokenExpiredModal(true);
-          setLoading(false);
-          return;
-        }
-
+        if (res.status === 401) { setShowTokenExpiredModal(true); setLoading(false); return; }
         const data = await res.json();
-
-        if (!data.success) {
-          setError(data.message || "Failed to fetch categories");
-          setCategories([]);
-          return;
-        }
-
+        if (!data.success) { setError(data.message || "Failed to fetch categories"); setCategories([]); return; }
         setCategories(data.data);
       } catch (err) {
-        const error = err instanceof Error ? err : new Error("Something went wrong");
-        setError(error.message);
+        setError(err instanceof Error ? err.message : "Something went wrong");
       } finally {
         setLoading(false);
       }
     };
-
     fetchCategories();
   }, [setShowTokenExpiredModal]);
 
   // *[HANDLE] Create Category
   const handleCreateCategory = async () => {
     setCategoryError("");
-
-    if (!categoryForm.name) {
-      setCategoryError("Category name is required");
-      return;
-    }
-
+    if (!categoryForm.name) { setCategoryError("Category name is required"); return; }
     try {
       setCreatingCategory(true);
-
       const token = localStorage.getItem("token");
-
-      const res = await fetch(
-        `${import.meta.env.VITE_API_BASE_URL}/api/categories`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(categoryForm),
-        }
-      );
-
-      if (res.status === 401) {
-        setShowTokenExpiredModal(true);
-        return;
-      }
-
+      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/categories`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify(categoryForm),
+      });
+      if (res.status === 401) { setShowTokenExpiredModal(true); return; }
       const data = await res.json();
-
-      if (!data.success) {
-        setCategoryError(data.message || "Failed to create category");
-        return;
-      }
-
+      if (!data.success) { setCategoryError(data.message || "Failed to create category"); return; }
       setCategories((prev) => [...prev, data.data]);
-
       setShowCategoryModal(false);
       setCategoryForm(initialCategoryForm);
     } catch (err) {
-      const error = err instanceof Error ? err : new Error("Something went wrong");
-      setCategoryError(error.message);
+      setCategoryError(err instanceof Error ? err.message : "Something went wrong");
     } finally {
       setCreatingCategory(false);
     }
   };
 
-  // *[HANDLE] Delete Category
-  const handleDeleteCategory = async (categoryId: number) => {
-    if (!confirm("Are you sure you want to delete this category?")) return;
-
+  // *[HANDLE] Update Category
+  const handleUpdateCategory = async () => {
+    setEditCategoryError("");
+    if (!editCategoryForm.name) { setEditCategoryError("Category name is required"); return; }
+    if (!editingCategory) return;
     try {
+      setUpdatingCategory(true);
       const token = localStorage.getItem("token");
-
-      const res = await fetch(
-        `${import.meta.env.VITE_API_BASE_URL}/api/categories/${categoryId}/hard`,
-        {
-          method: "DELETE",
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-
+      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/categories/${editingCategory.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify(editCategoryForm),
+      });
+      if (res.status === 401) { setShowTokenExpiredModal(true); return; }
       const data = await res.json();
-
-      if (!data.success) {
-        alert(data.message || "Failed to delete category");
-        return;
-      }
-
-      setCategories((prev) => prev.filter((c) => c.id !== categoryId));
+      if (!data.success) { setEditCategoryError(data.message || "Failed to update category"); return; }
+      setCategories((prev) =>
+        prev.map((c) => c.id === editingCategory.id ? { ...c, ...editCategoryForm } : c)
+      );
+      setShowEditCategoryModal(false);
+      setEditingCategory(null);
     } catch (err) {
-      const error = err instanceof Error ? err : new Error("Something went wrong");
-      alert(error.message);
+      setEditCategoryError(err instanceof Error ? err.message : "Something went wrong");
+    } finally {
+      setUpdatingCategory(false);
     }
   };
 
-// *[HANDLE] Create Subcategory
-const handleCreateSub = async () => {
-  setSubError("");
-
-  // LOG the current form state
-  console.log("Submitting subForm:", subForm);
-
-  if (!subForm.name || !subForm.categoryId) {
-    console.log("Validation failed:", { name: subForm.name, categoryId: subForm.categoryId });
-    setSubError("Subcategory name and category are required");
-    return;
-  }
-
-  try {
-    setCreatingSub(true);
-
-    const token = localStorage.getItem("token");
-
-    const bodyToSend = {
-      ...subForm,
-      categoryId: subForm.categoryId, // ensure it's a number
-    };
-    console.log("Sending to API:", bodyToSend);
-
-    const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/subcategories`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(bodyToSend),
-    });
-
-    if (res.status === 401) {
-      setShowTokenExpiredModal(true);
-      return;
+  // *[HANDLE] Delete Category
+  const handleConfirmDeleteCategory = async () => {
+    if (!categoryToDelete) return;
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(
+        `${import.meta.env.VITE_API_BASE_URL}/api/categories/${categoryToDelete.id}/hard`,
+        { method: "DELETE", headers: { Authorization: `Bearer ${token}` } }
+      );
+      const data = await res.json();
+      if (!data.success) { alert(data.message || "Failed to delete category"); return; }
+      setCategories((prev) => prev.filter((c) => c.id !== categoryToDelete.id));
+      setShowDeleteCategoryModal(false);
+      setCategoryToDelete(null);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Something went wrong");
     }
+  };
 
-    const data = await res.json();
-
-    console.log("API Response:", data);
-
-    if (!data.success) {
-      setSubError(data.message || "Failed to create subcategory");
-      return;
+  // *[HANDLE] Create Subcategory
+  const handleCreateSub = async () => {
+    setSubError("");
+    if (!subForm.name || !subForm.categoryId) { setSubError("Subcategory name and category are required"); return; }
+    try {
+      setCreatingSub(true);
+      const token = localStorage.getItem("token");
+      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/subcategories`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify(subForm),
+      });
+      if (res.status === 401) { setShowTokenExpiredModal(true); return; }
+      const data = await res.json();
+      if (!data.success) { setSubError(data.message || "Failed to create subcategory"); return; }
+      setCategories((prev) =>
+        prev.map((c) =>
+          c.id === subForm.categoryId
+            ? { ...c, subcategories: [...(c.subcategories || []), data.data] }
+            : c
+        )
+      );
+      setShowSubModal(false);
+      setSubForm(initialSubForm);
+    } catch (err) {
+      setSubError(err instanceof Error ? err.message : "Something went wrong");
+    } finally {
+      setCreatingSub(false);
     }
+  };
 
-    // Add to correct category
-    setCategories((prev) =>
-      prev.map((c) =>
-        c.id === subForm.categoryId
-          ? { ...c, subcategories: [...(c.subcategories || []), data.data] }
-          : c
-      )
-    );
+  // *[HANDLE] Update Subcategory
+  const handleUpdateSub = async () => {
+    setEditSubError("");
+    if (!editSubForm.name) { setEditSubError("Subcategory name is required"); return; }
+    if (!editingSub) return;
+    try {
+      setUpdatingSub(true);
+      const token = localStorage.getItem("token");
+      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/subcategories/${editingSub.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify(editSubForm),
+      });
+      if (res.status === 401) { setShowTokenExpiredModal(true); return; }
+      const data = await res.json();
+      if (!data.success) { setEditSubError(data.message || "Failed to update subcategory"); return; }
+      setCategories((prev) =>
+        prev.map((c) => ({
+          ...c,
+          subcategories: c.subcategories.map((s) =>
+            s.id === editingSub.id ? { ...s, name: editSubForm.name } : s
+          ),
+        }))
+      );
+      setShowEditSubModal(false);
+      setEditingSub(null);
+    } catch (err) {
+      setEditSubError(err instanceof Error ? err.message : "Something went wrong");
+    } finally {
+      setUpdatingSub(false);
+    }
+  };
 
-    setShowSubModal(false);
-    setSubForm(initialSubForm);
-  } catch (err) {
-    const error = err instanceof Error ? err : new Error("Something went wrong");
-    setSubError(error.message);
-  } finally {
-    setCreatingSub(false);
-  }
-};
+  // *[HANDLE] Delete Subcategory
+  const handleConfirmDeleteSub = async () => {
+    if (!subToDelete) return;
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(
+        `${import.meta.env.VITE_API_BASE_URL}/api/subcategories/${subToDelete.sub.id}/hard`,
+        { method: "DELETE", headers: { Authorization: `Bearer ${token}` } }
+      );
+      const data = await res.json();
+      if (!data.success) { alert(data.message || "Failed to delete subcategory"); return; }
+      setCategories((prev) =>
+        prev.map((c) =>
+          c.id === subToDelete.categoryId
+            ? { ...c, subcategories: c.subcategories.filter((s) => s.id !== subToDelete.sub.id) }
+            : c
+        )
+      );
+      setShowDeleteSubModal(false);
+      setSubToDelete(null);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Something went wrong");
+    }
+  };
 
   // [LOADING / ERROR STATE]
   if (loading) return <p>Loading categories...</p>;
@@ -253,62 +279,118 @@ const handleCreateSub = async () => {
   return (
     <div className="py-10 px-4 space-y-4">
 
-      {/* ================= CATEGORY MODAL ================= */}
+      {/* ================= DELETE CATEGORY MODAL ================= */}
+      {showDeleteCategoryModal && categoryToDelete && (
+        <Modal
+          isOpen={showDeleteCategoryModal}
+          title="Delete Category"
+          onClose={() => { setShowDeleteCategoryModal(false); setCategoryToDelete(null); }}
+          onConfirm={handleConfirmDeleteCategory}
+          confirmText="Delete"
+          cancelText="Cancel"
+        >
+          <p>
+            Are you sure you want to delete <strong>{categoryToDelete.name}</strong>?
+            This will also remove all its subcategories.
+          </p>
+        </Modal>
+      )}
+
+      {/* ================= DELETE SUBCATEGORY MODAL ================= */}
+      {showDeleteSubModal && subToDelete && (
+        <Modal
+          isOpen={showDeleteSubModal}
+          title="Delete Subcategory"
+          onClose={() => { setShowDeleteSubModal(false); setSubToDelete(null); }}
+          onConfirm={handleConfirmDeleteSub}
+          confirmText="Delete"
+          cancelText="Cancel"
+        >
+          <p>
+            Are you sure you want to delete subcategory <strong>{subToDelete.sub.name}</strong>?
+          </p>
+        </Modal>
+      )}
+
+      {/* ================= CREATE CATEGORY MODAL ================= */}
       <CrudModal<CategoryForm>
         isOpen={showCategoryModal}
         title="Create Category"
-        onClose={() => setShowCategoryModal(false)}
+        onClose={() => { setShowCategoryModal(false); setCategoryError(""); }}
         onConfirm={handleCreateCategory}
         loading={creatingCategory}
-
         showForm
         formData={categoryForm}
         setFormData={setCategoryForm}
         formError={categoryError}
-
         formFields={[
           { key: "name", label: "Category Name", type: "text" },
           { key: "description", label: "Description (Optional)", type: "text" },
         ]}
       />
 
-      {/* ================= SUBCATEGORY MODAL ================= */}
-<CrudModal<SubcategoryForm>
-  isOpen={showSubModal}
-  title="Create Subcategory"
-  onClose={() => setShowSubModal(false)}
-  onConfirm={handleCreateSub}
-  loading={creatingSub}
+      {/* ================= EDIT CATEGORY MODAL ================= */}
+      <CrudModal<CategoryForm>
+        isOpen={showEditCategoryModal}
+        title="Edit Category"
+        onClose={() => { setShowEditCategoryModal(false); setEditCategoryError(""); setEditingCategory(null); }}
+        onConfirm={handleUpdateCategory}
+        loading={updatingCategory}
+        showForm
+        formData={editCategoryForm}
+        setFormData={setEditCategoryForm}
+        formError={editCategoryError}
+        formFields={[
+          { key: "name", label: "Category Name", type: "text" },
+          { key: "description", label: "Description (Optional)", type: "text" },
+        ]}
+      />
 
-  showForm
-  formData={subForm}
-  setFormData={setSubForm}
-  formError={subError}
+      {/* ================= CREATE SUBCATEGORY MODAL ================= */}
+      <CrudModal<SubcategoryForm>
+        isOpen={showSubModal}
+        title="Create Subcategory"
+        onClose={() => { setShowSubModal(false); setSubError(""); }}
+        onConfirm={handleCreateSub}
+        loading={creatingSub}
+        showForm
+        formData={subForm}
+        setFormData={setSubForm}
+        formError={subError}
+        formFields={[
+          { key: "name", label: "Subcategory Name", type: "text" },
+          {
+            key: "categoryId",
+            label: "Category",
+            type: "select",
+            options: categories.map((c) => ({ label: c.name, value: c.id })),
+            value: subForm.categoryId ?? "",
+            onChange: (value) => {
+              setSubForm((prev) => ({ ...prev, categoryId: Number(value) }));
+            },
+          },
+        ]}
+      />
 
-  formFields={[
-    { key: "name", label: "Subcategory Name", type: "text" },
-    {
-      key: "categoryId",
-      label: "Category",
-      type: "select",
-      options: categories.map((c) => ({ label: c.name, value: c.id })), // correct
-      value: subForm.categoryId ?? "", // use the id directly
-      onChange: (value) => {
-        const valNum = Number(value); // convert string to number
-        setSubForm((prev) => ({
-          ...prev,
-          categoryId: valNum, // ensure number
-        }));
-      },
-    },
-  ]}
-/>
+      {/* ================= EDIT SUBCATEGORY MODAL ================= */}
+      <CrudModal<EditSubcategoryForm>
+        isOpen={showEditSubModal}
+        title="Edit Subcategory"
+        onClose={() => { setShowEditSubModal(false); setEditSubError(""); setEditingSub(null); }}
+        onConfirm={handleUpdateSub}
+        loading={updatingSub}
+        showForm
+        formData={editSubForm}
+        setFormData={setEditSubForm}
+        formError={editSubError}
+        formFields={[
+          { key: "name", label: "Subcategory Name", type: "text" },
+        ]}
+      />
 
       {/* ================= HEADER ================= */}
       <div className="flex flex-col items-center">
-        <h1 className="font-h2 font-font-extrabold text-text-900">
-          Category Management
-        </h1>
+        <h1 className="font-bold text-2xl">Category Management</h1>
       </div>
 
       {/* ================= ACTION BUTTONS ================= */}
@@ -316,25 +398,26 @@ const handleCreateSub = async () => {
         <PrimaryButton
           text="Add Category"
           iconSrc="/add-icon.svg"
-          onClick={() => setShowCategoryModal(true)}
+          onClick={() => {
+            setCategoryForm(initialCategoryForm);
+            setShowCategoryModal(true);
+          }}
         />
-
         <PrimaryButton
           text="Add Subcategory"
           iconSrc="/add-icon.svg"
           color="F59E0B"
           onClick={() => {
-  setSubForm({ name: "", categoryId: categories[0]?.id });
-  setShowSubModal(true);
-}}
+            setSubForm({ name: "", categoryId: categories[0]?.id });
+            setShowSubModal(true);
+          }}
         />
       </div>
 
       {/* ================= CATEGORY LIST ================= */}
       <div className="space-y-4 mt-4 px-4 py-4 bg-bg-50 rounded-md">
-        <h3 className="text-text-700">
-          Categories
-        </h3>
+        <h3 className="text-text-700">Categories</h3>
+
         {categories.length === 0 && (
           <p className="text-center text-gray-500">No categories found</p>
         )}
@@ -347,25 +430,73 @@ const handleCreateSub = async () => {
               key={category.id}
               className={`relative rounded-md p-4 shadow-sm ${bgColor} text-white`}
             >
-              {/* Delete Button */}
-              <button
-                className="text-h6 absolute top-3 right-3 text-white font-bold px-2 py-1 rounded hover:bg-red-600 bg-red-500"
-                onClick={() => handleDeleteCategory(category.id)}
-              >
-                ✕
-              </button>
+              {/* [UI] Category action buttons */}
+              <div className="absolute top-3 right-3 flex items-center gap-1">
+                {/* Edit Category */}
+                <button
+                  className="text-white font-bold px-2 py-1 rounded hover:bg-white/20 transition-colors"
+                  onClick={() => {
+                    setEditingCategory(category);
+                    setEditCategoryForm({ name: category.name, description: category.description ?? "" });
+                    setEditCategoryError("");
+                    setShowEditCategoryModal(true);
+                  }}
+                >
+                  <img src="/edit-filled-icon.svg" alt="Edit" className="w-4 h-4 brightness-0 invert" />
+                </button>
 
-              <h2 className="font-bold text-lg">{category.name}</h2>
-              <h5>{category.description}</h5>
+                {/* Delete Category */}
+                <button
+                  className="text-white font-bold px-2 py-1 rounded hover:bg-red-600 bg-red-500 transition-colors"
+                  onClick={() => {
+                    setCategoryToDelete(category);
+                    setShowDeleteCategoryModal(true);
+                  }}
+                >
+                  ✕
+                </button>
+              </div>
 
-              <div className="mt-2 pl-4 space-y-1">
+              {/* [UI] Category info */}
+              <h2 className="font-bold text-lg pr-20">{category.name}</h2>
+              {category.description && <p className="text-sm text-white/80">{category.description}</p>}
+
+              {/* [UI] Subcategory list */}
+              <div className="mt-3 pl-2 space-y-1">
                 {(category.subcategories ?? []).length === 0 ? (
                   <p className="text-sm text-white/80">No subcategories</p>
                 ) : (
                   category.subcategories.map((sub) => (
-                    <p key={sub.id} className="text-sm">
-                      • {sub.name}
-                    </p>
+                    <div key={sub.id} className="flex items-center justify-between gap-2 group">
+                      <p className="text-sm">• {sub.name}</p>
+
+                      {/* [UI] Subcategory action buttons */}
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        {/* Edit Subcategory */}
+                        <button
+                          className="text-white p-1 rounded hover:bg-white/20 transition-colors"
+                          onClick={() => {
+                            setEditingSub(sub);
+                            setEditSubForm({ name: sub.name });
+                            setEditSubError("");
+                            setShowEditSubModal(true);
+                          }}
+                        >
+                          <img src="/edit-filled-icon.svg" alt="Edit" className="w-3.5 h-3.5 brightness-0 invert" />
+                        </button>
+
+                        {/* Delete Subcategory */}
+                        <button
+                          className="text-white p-1 rounded hover:bg-red-600 bg-red-500/70 transition-colors text-xs font-bold"
+                          onClick={() => {
+                            setSubToDelete({ sub, categoryId: category.id });
+                            setShowDeleteSubModal(true);
+                          }}
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    </div>
                   ))
                 )}
               </div>

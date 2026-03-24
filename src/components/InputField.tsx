@@ -106,13 +106,14 @@ const InputField = ({
         ) : (
           <input
             type={type === "password" ? (showPassword ? "text" : "password") : type}
+            step="any"
             value={value}
             onChange={(e) => {
               let val = e.target.value;
 
               if (type === "number") {
                 if (val.startsWith("-")) val = val.slice(1);
-                val = val.replace(/[^\d]/g, "");
+                val = val.replace(/[^\d.]/g, "");
                 if (maxLength && val.length > maxLength) val = val.slice(0, maxLength);
                 if (max !== undefined && Number(val) > max) val = String(max);
                 const event = { ...e, target: { ...e.target, value: val } } as React.ChangeEvent<HTMLInputElement>;

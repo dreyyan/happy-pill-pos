@@ -32,7 +32,7 @@ const Header = () => {
     setRole("");
     setProfileName("");
 
-    navigate("/login");
+    navigate(`/login/${role.toLowerCase()}`);
   };
 
   return (
@@ -111,6 +111,12 @@ const Header = () => {
                 to="/admin/inventory"
                 onClick={closeSidebar}
               />
+              <SidebarLink
+                icon="/categories-filled-icon.svg"
+                text="Categories"
+                to="/admin/categories"
+                onClick={closeSidebar}
+              />
             </>
           )}
           {role === "Cashier" && (
@@ -144,7 +150,6 @@ const Header = () => {
           <SidebarLink
             icon="/logout-filled-icon.svg"
             text="Logout"
-            to="/login"
             onClick={() => {
               closeSidebar();
               handleLogout();

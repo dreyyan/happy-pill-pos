@@ -12,15 +12,16 @@ const Home = () => {
 
   return (
     <div>
-      {/* Top image header (same as login) */}
+      {/* [COMPONENT] Image Header */}
       <ImageHeader />
 
-      {/* HERO SECTION */}
+      {/* [SECTION] Hero Section */}
       <section className="bg-surface min-h-[calc(100vh-120px)] flex items-center justify-center px-6 py-16">
         <div className="max-w-6xl w-full grid md:grid-cols-2 gap-12 items-center">
 
-          {/* LEFT SIDE — TEXT */}
+          {/* [L] Hero Section Header */}
           <div>
+            {/* [UI] Hero Title */}
             <h1 className="text-4xl md:text-5xl font-bold text-text-900 leading-tight">
               Run Your Cafe <br />
               Smarter with{" "}
@@ -29,18 +30,21 @@ const Home = () => {
               </span>
             </h1>
 
+            {/* [UI] Hero Description */}
             <p className="mt-6 text-lg text-text-700">
               Fast. Reliable. Easy to use.  
               Manage orders, inventory, sales, and staff — all in one place.
             </p>
 
-            {/* ACTION BUTTONS */}
+            {/* [SECTION] Primary Buttons */}
             <div className="flex flex-col sm:flex-row gap-3 mt-8">
+              {/* [PRIMARY BUTTON] Admin Login */}
               <PrimaryButton
                 text="Admin Login"
                 onClick={() => navigate("/login/admin")}
               />
 
+              {/* [SECONDARY BUTTON] Cashier Login */}
               <button
                 onClick={() => navigate("/login/cashier")}
                 className="px-6 py-3 rounded-md border text-button font-bold text-text-on-primary border-primary-600 text-primary-600 hover:bg-primary-50 transition"
@@ -49,6 +53,7 @@ const Home = () => {
               </button>
             </div>
 
+              {/* [SECTION] Trust Badges */}
               <div className="mt-10 grid grid-cols-1 sm:grid-cols-3 gap-6">
                 <TrustBadge
                   iconSrc="/cashier-icon.svg"
@@ -70,11 +75,11 @@ const Home = () => {
               </div>
           </div>
 
-          {/* RIGHT SIDE — HERO VISUAL */}
+          {/* [R] Hero Visuals */}
           <div className="flex justify-center">
             <div className="relative bg-gradient-to-tr from-primary-500 to-primary-700 rounded-3xl shadow-2xl p-10 w-full max-w-md">
 
-              {/* Logo */}
+              {/* [UI] Logo */}
               <div className="flex justify-center mb-6">
                 <img
                   src="/happy-pill-cafe-logo.svg"
@@ -83,12 +88,12 @@ const Home = () => {
                 />
               </div>
 
-              {/* Tagline */}
+              {/* [UI] Tagline */}
               <p className="italic text-white text-center text-lg font-semibold">
                 "Your daily dose of productivity."
               </p>
 
-              {/* Decorative Pills */}
+              {/* [UI] Pill Gradient */}
               <div className="absolute -top-4 -left-4 bg-white/20 rounded-full w-12 h-12 blur-md" />
               <div className="absolute -bottom-4 -right-4 bg-white/20 rounded-full w-16 h-16 blur-md" />
             </div>

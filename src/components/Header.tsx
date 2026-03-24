@@ -94,6 +94,12 @@ const Header = () => {
                 onClick={closeSidebar}
               />
               <SidebarLink
+                icon="/transaction-filled-icon.svg"
+                text="Transactions"
+                to="/admin/transactions"
+                onClick={closeSidebar}
+              />
+              <SidebarLink
                 icon="/inventory-filled-icon.svg"
                 text="Inventory"
                 to="/admin/inventory"
@@ -106,21 +112,15 @@ const Header = () => {
                 onClick={closeSidebar}
               />
               <SidebarLink
-                icon="/transaction-filled-icon.svg"
-                text="Transactions"
-                to="/admin/transactions"
+                icon="/categories-filled-icon.svg"
+                text="Categories"
+                to="/admin/categories"
                 onClick={closeSidebar}
               />
               <SidebarLink
                 icon="/cashier-filled-icon.svg"
                 text="Cashiers"
                 to="/admin/cashiers"
-                onClick={closeSidebar}
-              />
-              <SidebarLink
-                icon="/categories-filled-icon.svg"
-                text="Categories"
-                to="/admin/categories"
                 onClick={closeSidebar}
               />
             </>
@@ -159,8 +159,7 @@ const Header = () => {
             onClick={() => {
               closeSidebar();
               handleLogout();
-            }}
-          />
+            }}/>
         </nav>
       </aside>
     </>

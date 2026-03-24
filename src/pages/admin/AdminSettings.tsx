@@ -100,6 +100,7 @@ const AdminSettings = () => {
       // Reset form fields
       setForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
     } catch (err: unknown) {
+      // ![ERROR] Network or server issue
       let message = "Failed to update password.";
       if (err instanceof Error) message = err.message;
 

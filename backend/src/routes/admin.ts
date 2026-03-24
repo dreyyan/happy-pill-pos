@@ -11,7 +11,115 @@ import { hashPassword } from '../utils/auth';
 // [IMPORT] Middleware
 import { verifyAdmin } from '../middleware/authMiddleware';
 
+// [IMPORT] CSV Parser
+import multer from 'multer';
+import { parse } from "csv-parse/sync";
+import fs from 'fs';
+
+const upload = multer({ dest: 'uploads/' });
+
 const router = Router();
+
+
+// * [POST] Import Users via CSV
+// ? /api/admin/import-users
+router.post(
+  '/import-users',
+  verifyAdmin,
+  upload.single('file'),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      if (!req.file) {
+        console.error("[CSV IMPORT] No file uploaded");
+        return res.status(400).json(errorResponse("CSV file is required"));
+      }
+
+      // [1] Read file content
+      const fileContent = fs.readFileSync(req.file.path, 'utf-8');
+      console.log("[CSV IMPORT] File read successfully:\n", fileContent);
+
+      // [2] Parse CSV synchronously with comma delimiter
+      const records = parse(fileContent, {
+        columns: true,
+        skip_empty_lines: true,
+        trim: true,
+        delimiter: ',', // <-- comma-separated CSV
+      });
+      console.log(`[CSV IMPORT] Parsed ${records.length} records`);
+
+      let createdCount = 0;
+
+      // [3] Process each record sequentially
+      for (const [index, row] of records.entries()) {
+        console.log(`[CSV IMPORT] Processing row ${index + 1}:`, row);
+
+        const name = row['Name']?.trim() || row['name']?.trim();
+        const email = row['Email']?.trim() || row['email']?.trim();
+        const roleRaw = row['Role']?.trim() || row['role']?.trim();
+
+        if (!name || !roleRaw || !email) {
+          console.warn(`[CSV IMPORT] Skipping row ${index + 1}: missing required fields`);
+          continue;
+        }
+
+        const role = roleRaw.toUpperCase();
+        if (role !== "ADMIN" && role !== "CASHIER") {
+          console.warn(`[CSV IMPORT] Skipping row ${index + 1}: invalid role "${roleRaw}"`);
+          continue;
+        }
+
+        const [firstName, ...lastParts] = name.split(" ");
+        const lastName = lastParts.join(" ") || "";
+
+        // Skip if email already exists
+        const existing = await prisma.user.findUnique({ where: { email } });
+        if (existing) {
+          console.warn(`[CSV IMPORT] Skipping row ${index + 1}: email "${email}" already exists`);
+          continue;
+        }
+
+        // [4] Use default password "password123"
+        const defaultPassword = "password123";
+        const hashedPassword = await hashPassword(defaultPassword, 10);
+
+        // [5] Create user
+        try {
+          await prisma.user.create({
+            data: {
+              email,
+              password: hashedPassword,
+              firstName,
+              lastName,
+              role,
+              isActive: true,
+              admin: role === "ADMIN" ? { create: {} } : undefined,
+              cashier: role === "CASHIER" ? { create: {} } : undefined,
+            },
+          });
+          console.log(`[CSV IMPORT] Created user: ${email} (${role})`);
+          createdCount++;
+        } catch (createErr) {
+          console.error(`[CSV IMPORT] Failed to create user "${email}":`, createErr);
+        }
+      }
+
+      // [6] Delete uploaded file
+      fs.unlinkSync(req.file.path);
+      console.log("[CSV IMPORT] Deleted uploaded file");
+
+      info(`Imported ${createdCount} users from CSV`);
+      res.json(successResponse(`Successfully imported ${createdCount} users`, { createdCount }));
+
+    } catch (err: unknown) {
+      let errorMessage = "Error importing users";
+      if (err instanceof Error) errorMessage = err.message;
+
+      console.error(`[CSV IMPORT] CSV import error: ${errorMessage}`);
+      res.status(500).json(errorResponse(errorMessage));
+      next(err);
+    }
+  }
+);
 
 // * [GET] Get Admin Dashboard Summary
 // ? /api/admin/dashboard/summary
@@ -38,6 +146,7 @@ router.get('/dashboard/summary', verifyAdmin, async (req: Request, res: Response
         }
 
         // [3] Aggregate dashboard metrics
+        const totalAdmins = await prisma.user.count({ where: { role: 'ADMIN', isActive: true } });
         const totalCashiers = await prisma.user.count({ where: { role: 'CASHIER', isActive: true } });
         const totalItems = await prisma.item.count({ where: { isActive: true } });
         const totalTransactions = await prisma.transaction.count({});
@@ -49,6 +158,7 @@ router.get('/dashboard/summary', verifyAdmin, async (req: Request, res: Response
                 name: `${adminUser.firstName} ${adminUser.lastName}`,
                 email: adminUser.email,
             },
+            totalAdmins,
             totalCashiers,
             totalItems,
             totalTransactions,
@@ -62,6 +172,48 @@ router.get('/dashboard/summary', verifyAdmin, async (req: Request, res: Response
         let errorMessage = "An unexpected error occurred while fetching dashboard summary";
         if (err instanceof Error) errorMessage = err.message;
         error(`Error fetching admin dashboard summary: ${errorMessage}`);
+        res.status(500).json(errorResponse(errorMessage));
+        next(err);
+    }
+});
+
+// * [GET] Get All Users (Name + Role)
+// ? /api/admin/users
+router.get('/users', verifyAdmin, async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        // [1] Fetch all Admins
+        const admins = await prisma.admin.findMany({
+            include: { user: true }
+        });
+
+        const adminsMapped = admins.map(a => ({
+            name: `${a.user.firstName} ${a.user.lastName}`,
+            role: a.user.role,
+            email: a.user.email
+        }));
+
+        // [2] Fetch all Cashiers
+        const cashiers = await prisma.cashier.findMany({
+            include: { user: true }
+        });
+
+        const cashiersMapped = cashiers.map(c => ({
+            name: `${c.user.firstName} ${c.user.lastName}`,
+            role: c.user.role,
+            email: c.user.email
+        }));
+
+        // [3] Combine both results
+        const allUsers = [...adminsMapped, ...cashiersMapped];
+
+        // * [SUCCESS] Return all users
+        info(`Fetched ${admins.length} admins and ${cashiers.length} cashiers (name + role)`);
+        res.json(successResponse("All users fetched successfully", allUsers));
+
+    } catch (err: unknown) {
+        let errorMessage = "An unexpected error occurred while fetching users";
+        if (err instanceof Error) errorMessage = err.message;
+        error(`Error fetching all users: ${errorMessage}`);
         res.status(500).json(errorResponse(errorMessage));
         next(err);
     }

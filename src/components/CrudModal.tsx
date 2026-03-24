@@ -14,6 +14,7 @@ interface FormField<T> {
   options?: (string | SelectOption)[];
   value?: string;
   onChange?: (value: string | number) => void;
+  render?: () => React.ReactNode;
 }
 
 interface CrudModalProps<T extends Record<string, unknown>> {
@@ -74,56 +75,66 @@ function CrudModal<T extends Record<string, unknown>>({
 
         {showForm && formData && setFormData && (
           <div className="flex flex-col gap-3">
-            {formFields.map((field) => {
-              if (field.type === "select" && field.options) {
-                return (
-                  <div key={String(field.key)} className="flex flex-col">
-                    <label className="font-roboto text-sm mb-1">{field.label}</label>
-                    <select
-                      value={String(field.value ?? formData[field.key] ?? "")} // force string
-                      onChange={(e) => {
-                        const valNum = Number(e.target.value); // convert back to number
-                        console.log("Select changed:", field.key, "raw value:", e.target.value, "as number:", valNum);
+{formFields.map((field) => {
+  // [CUSTOM RENDER] - Highest priority
+  if ("render" in field && typeof field.render === "function") {
+    return (
+      <div key={String(field.key)} className="flex flex-col">
+        <label className="font-roboto text-sm mb-1">{field.label}</label>
+        {field.render()}
+      </div>
+    );
+  }
 
-                        if (field.onChange) {
-                          field.onChange(valNum as unknown as string);
-                        } else {
-                          handleFieldChange(field.key, field.type, String(valNum));
-                        }
-                      }}
-                      className="bg-[var(--color-bg-50)] font-roboto rounded-md py-2 px-3 border border-[var(--color-text-300)] outline-none focus:ring-2 focus:ring-[var(--color-primary-600)] text-sm"
-                      disabled={!field.options || field.options.length === 0} // <-- disables if no options
-                    >
-                      {field.options?.map((opt) =>
-                        typeof opt === "object" ? (
-                          <option key={opt.value} value={String(opt.value)}>
-                            {opt.label}
-                          </option>
-                        ) : (
-                          <option key={opt} value={String(opt)}>
-                            {opt}
-                          </option>
-                        )
-                      )}
-                    </select>
-                  </div>
-                );
-              } else {
-                return (
-                  <InputField
-                    key={String(field.key)}
-                    label={field.label}
-                    type={field.type}
-                    value={field.value ?? String(formData[field.key] ?? "")}
-                    onChange={(e) =>
-                      field.onChange
-                        ? field.onChange(e.target.value)
-                        : handleFieldChange(field.key, field.type, e.target.value)
-                    }
-                  />
-                );
-              }
-            })}
+  // [SELECT] Field
+  if (field.type === "select" && field.options) {
+    return (
+      <div key={String(field.key)} className="flex flex-col">
+        <label className="font-roboto text-sm mb-1">{field.label}</label>
+        <select
+          value={String(field.value ?? formData[field.key] ?? "")}
+          onChange={(e) => {
+            const val = e.target.value;
+            if (field.onChange) {
+              field.onChange(val);
+            } else {
+              handleFieldChange(field.key, field.type, val);
+            }
+          }}
+          className="bg-[var(--color-bg-50)] font-roboto rounded-md py-2 px-3 border border-[var(--color-text-300)] outline-none focus:ring-2 focus:ring-[var(--color-primary-600)] text-sm"
+          disabled={!field.options || field.options.length === 0}
+        >
+          {field.options?.map((opt) =>
+            typeof opt === "object" ? (
+              <option key={opt.value} value={String(opt.value)}>
+                {opt.label}
+              </option>
+            ) : (
+              <option key={opt} value={String(opt)}>
+                {opt}
+              </option>
+            )
+          )}
+        </select>
+      </div>
+    );
+  }
+
+  // [DEFAULT] InputField
+  return (
+    <InputField
+      key={String(field.key)}
+      label={field.label}
+      type={field.type}
+      value={field.value ?? String(formData[field.key] ?? "")}
+      onChange={(e) =>
+        field.onChange
+          ? field.onChange(e.target.value)
+          : handleFieldChange(field.key, field.type, e.target.value)
+      }
+    />
+  );
+})}
             {formError && <p className="text-red-500 text-sm mt-1">{formError}</p>}
           </div>
         )}

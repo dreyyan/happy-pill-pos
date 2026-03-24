@@ -1,11 +1,13 @@
 // [IMPORT] Hooks
+import React from "react";
 import { useState, useEffect } from "react";
+import { useAuth } from "../../context/useAuth";
 
 // [IMPORT] Components
+import Modal from "../../components/Modal";
 import Skeleton from "../../components/Skeleton";
 import InputField from "../../components/InputField";
-import Modal from "../../components/Modal";
-import React from "react";
+import PrimaryButton from "../../components/PrimaryButton";
 
 // ? [INTERFACES]
 interface SettingsForm {
@@ -15,8 +17,14 @@ interface SettingsForm {
 }
 
 const AdminSettings = () => {
-  // [STATES]
+  const { setShowTokenExpiredModal } = useAuth();
+
+  // [STATES] CSV Profile
   const [loading, setLoading] = useState(true);
+  const [csvFile, setCsvFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
+
+  // [STATES] Modal
   const [showModal, setShowModal] = useState(false);
   const [modalTitle, setModalTitle] = useState("");
   const [modalMessage, setModalMessage] = useState("");
@@ -28,10 +36,7 @@ const AdminSettings = () => {
     confirmPassword: "",
   });
 
-  const [csvFile, setCsvFile] = useState<File | null>(null);
-  const [uploading, setUploading] = useState(false);
-
-  // *[EFFECT] Reset loading (no API fetch needed now)
+  // * [EFFECT] Reset loading
   useEffect(() => setLoading(false), []);
 
   // [HANDLE] Form change
@@ -41,7 +46,68 @@ const AdminSettings = () => {
 
   // [HANDLE] Save password
   const handleSave = async () => {
-    // ... existing password logic
+    const { currentPassword, newPassword, confirmPassword } = form;
+
+    // ! [ERROR] Empty input fields
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      setModalTitle("Validation Error");
+      setModalMessage("All password fields are required.");
+      setModalType("error");
+      setShowModal(true);
+      return;
+    }
+
+    // ! [ERROR] Password mismatch
+    if (newPassword !== confirmPassword) {
+      setModalTitle("Validation Error");
+      setModalMessage("New password and confirmation do not match.");
+      setModalType("error");
+      setShowModal(true);
+      return;
+    }
+
+    const token = localStorage.getItem("token");
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/admin/change-password`, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ currentPassword, newPassword, confirmPassword }),
+      });
+
+      // ! [ERROR] Expired token
+      if (res.status === 401) {
+        setShowTokenExpiredModal(true);
+        return;
+      }
+
+      const data = await res.json();
+
+      // ! [ERROR] Backend failure response
+      if (!data.success) {
+        const cleanMessage = data.message?.replace(/^\[ERROR\]\s*/, "") || "Failed to update password";
+        throw new Error(cleanMessage);
+      }
+
+      // * [SUCCESS] Password updated
+      setModalTitle("Success");
+      setModalMessage("Your password has been updated successfully.");
+      setModalType("success");
+      setShowModal(true);
+
+      // Reset form fields
+      setForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
+    } catch (err: unknown) {
+      let message = "Failed to update password.";
+      if (err instanceof Error) message = err.message;
+
+      setModalTitle("Error");
+      setModalMessage(message);
+      setModalType("error");
+      setShowModal(true);
+    }
   };
 
   // [HANDLE] CSV selection
@@ -53,6 +119,7 @@ const AdminSettings = () => {
 
   // [HANDLE] Upload CSV and Auto-Create Accounts
   const handleUploadCsv = async () => {
+    // ! [ERROR] No CSV file uploaded
     if (!csvFile) {
       setModalTitle("Validation Error");
       setModalMessage("Please select a CSV file to upload.");
@@ -62,8 +129,6 @@ const AdminSettings = () => {
     }
 
     const token = localStorage.getItem("token");
-    if (!token) return;
-
     try {
       setUploading(true);
 
@@ -78,9 +143,15 @@ const AdminSettings = () => {
         body: formData,
       });
 
+      // ! [ERROR] Expired token
+      if (res.status === 401) {
+        setShowTokenExpiredModal(true);
+        return;
+      }
+
       const data = await res.json();
 
-      // ![ERROR] If backend returns error
+      // ![ERROR] Backend failure response
       if (!data.success) {
         const cleanMessage = data.message?.replace(/^\[ERROR\]\s*/, "") || "Failed to upload CSV";
         throw new Error(cleanMessage);
@@ -93,7 +164,8 @@ const AdminSettings = () => {
       setShowModal(true);
 
       setCsvFile(null); // Reset file input
-      // @ts-ignore
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-expect-error
       document.getElementById("csv-upload")!.value = "";
     } catch (err: unknown) {
       let message = "Failed to upload CSV.";
@@ -112,8 +184,8 @@ const AdminSettings = () => {
   if (loading) return <Skeleton />;
 
   return (
-    <div className="py-6 px-4 flex flex-col items-center gap-y-6">
-      {/* Modal */}
+    <div className="py-6 px-4 flex flex-col gap-y-4">
+      {/* [COMPONENT] Modal */}
       {showModal && (
         <Modal
           isOpen={showModal}
@@ -125,49 +197,52 @@ const AdminSettings = () => {
         />
       )}
 
-      {/* Password Card */}
+      {/* [UI] Page Title */}
+      <h1 className="font-h2 font-font-extrabold text-text-900">Settings</h1>
+
+      {/* [SECTION] Settings */}
       <div className="w-full max-w-md bg-bg-100 border border-bg-300 rounded-lg shadow-sm p-5 space-y-4">
-        <h1 className="font-h2 font-font-extrabold text-text-900">Settings</h1>
-        <h3 className="text-text-700">Security</h3>
-
+        {/* [SECTION] Security */}
         <div className="space-y-3">
-          <InputField
-            label="Current Password"
-            type="password"
-            value={form.currentPassword}
-            onChange={(e) => handleChange("currentPassword", e.target.value)}
-          />
+          <h3 className="text-text-700">Security</h3>
 
-          <InputField
-            label="New Password"
-            type="password"
-            value={form.newPassword}
-            onChange={(e) => handleChange("newPassword", e.target.value)}
-          />
+          {/* [SECTION] Input Fields */}
+          <div className="space-y-3">
+            <InputField
+              label="Current Password"
+              type="password"
+              value={form.currentPassword}
+              onChange={(e) => handleChange("currentPassword", e.target.value)}
+            />
+            <InputField
+              label="New Password"
+              type="password"
+              value={form.newPassword}
+              onChange={(e) => handleChange("newPassword", e.target.value)}
+            />
+            <InputField
+              label="Confirm Password"
+              type="password"
+              value={form.confirmPassword}
+              onChange={(e) => handleChange("confirmPassword", e.target.value)}
+            />
+          </div>
 
-          <InputField
-            label="Confirm Password"
-            type="password"
-            value={form.confirmPassword}
-            onChange={(e) => handleChange("confirmPassword", e.target.value)}
-          />
+          {/* [PRIMARY BUTTON] Update Password */}
+          <div className="pt-2">
+            <PrimaryButton text="Update Password" color="059669" onClick={handleSave} />
+          </div>
         </div>
-
-        <button
-          onClick={handleSave}
-          className="w-full py-2 rounded-md bg-green-600 hover:opacity-90 text-white font-roboto font-medium transition"
-        >
-          Update Password
-        </button>
       </div>
 
-      {/* CSV Upload Card */}
+      {/* [SECTION] CSV Upload */}
       <div className="w-full max-w-md bg-bg-100 border border-bg-300 rounded-lg shadow-sm p-5 space-y-4">
         <h3 className="text-text-700 font-semibold">Auto-Create Users (CSV)</h3>
         <p className="text-text-500 text-sm">
           Upload a CSV file with columns: <strong>Name</strong>, <strong>Email</strong>, <strong>Role</strong> (Admin or Cashier).
         </p>
 
+        {/* [INPUT] Upload CSV */}
         <input
           id="csv-upload"
           type="file"
@@ -176,13 +251,8 @@ const AdminSettings = () => {
           className="w-full border border-bg-300 rounded-md p-2 text-sm"
         />
 
-        <button
-          onClick={handleUploadCsv}
-          disabled={uploading}
-          className="w-full py-2 rounded-md bg-blue-600 hover:opacity-90 text-white font-roboto font-medium transition"
-        >
-          {uploading ? "Uploading..." : "Upload CSV & Create Users"}
-        </button>
+        {/* [PRIMARY BUTTON] Upload CSV */}
+        <PrimaryButton text={`${uploading ? "Uploading..." : "Upload CSV & Create Users"}`} onClick={handleUploadCsv} disabled={uploading} />
       </div>
     </div>
   );

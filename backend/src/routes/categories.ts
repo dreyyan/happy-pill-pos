@@ -16,7 +16,8 @@ const router = Router();
 router.get('/', async (req: Request, res: Response, next: NextFunction) => {
     try {
         const categories = await prisma.category.findMany({
-            orderBy: { name: 'asc' }
+            orderBy: { name: 'asc' },
+            include: { subcategories: true }
         });
 
         // * [SUCCESS] Return all categories
@@ -37,6 +38,16 @@ router.post('/', verifyAdmin, async (req: Request, res: Response, next: NextFunc
     const { name, description, isActive } = req.body;
 
     try {
+        // Check if category already exists
+        const existingCategory = await prisma.category.findUnique({
+            where: { name },
+        });
+
+        // ! [ERROR] Existing category
+        if (existingCategory) {
+            return res.status(400).json(errorResponse("Category with this name already exists"));
+        }
+
         const newCategory = await prisma.category.create({
             data: { name, description, isActive }
         });
@@ -160,6 +171,7 @@ router.delete('/:id', verifyAdmin, async (req: Request, res: Response, next: Nex
 // ? /api/categories/:id/hard
 router.delete('/:id/hard', verifyAdmin, async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
+    const categoryId = Number(id);
 
     try {
         // [1] Fetch category to ensure it exists
@@ -172,9 +184,13 @@ router.delete('/:id/hard', verifyAdmin, async (req: Request, res: Response, next
             return res.status(404).json(errorResponse("Category not found"));
         }
 
-        // [2] Hard delete the category
+        await prisma.subcategory.deleteMany({
+        where: { categoryId: categoryId },
+        });
+
+        // Delete category
         await prisma.category.delete({
-            where: { id: Number(id) }
+        where: { id: categoryId },
         });
 
         // * [SUCCESS] Category hard deleted

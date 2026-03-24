@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 interface SidebarLinkProps {
   icon: string;
   text: string;
-  to: string;
+  to?: string;
   onClick?: () => void;
 }
 
@@ -13,7 +13,7 @@ const SidebarLink: React.FC<SidebarLinkProps> = ({ icon, text, to, onClick }) =>
 
   // [HANDLE] Click navigation link
   const handleClick = () => {
-    navigate(to);
+    if (to) navigate(to);
     if (onClick) onClick();
   };
 

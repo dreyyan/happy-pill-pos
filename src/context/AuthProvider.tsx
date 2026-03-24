@@ -1,6 +1,6 @@
 // [IMPORT] Hooks
 import React from "react";
-import { useState, type ReactNode } from "react";
+import { useState, useEffect, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from "./AuthContextOnly";
 
@@ -11,6 +11,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // [STATES]
   const [showTokenExpiredModal, setShowTokenExpiredModal] = useState(false);
   const navigate = useNavigate();
+
+  // [EFFECT]
+  // 1. Automatically check if token expires
+  // 2. Notify user via modal
+  // 3. Logout > Redirect to login
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      // Defer setState to next tick
+      const id = setTimeout(() => setShowTokenExpiredModal(true), 0);
+      return () => clearTimeout(id);
+    }
+  }, []);
 
   // [HANDLE] Logout
   const logout = () => {

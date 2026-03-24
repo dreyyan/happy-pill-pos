@@ -34,6 +34,7 @@ const AdminProfile = () => {
   const navigate = useNavigate();
 
   // [STATES]
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [profile, setProfile] = useState<AdminProfileData | null>(null);
   const [form, setForm] = useState<AdminForm>({
     name: "",
@@ -70,10 +71,11 @@ const AdminProfile = () => {
   const nextPage = () => { if (currentPage < totalPages) setCurrentPage((p) => p + 1); };
   const prevPage = () => { if (currentPage > 1) setCurrentPage((p) => p - 1); };
 
-  // [HANDLE] Save
+  // * [HANDLE] Save
   const handleSave = async () => {
     if (!form) return;
 
+    // ! [ERROR] Empty name and/or email address
     if (!form.name || !form.email) {
       setModalTitle("Validation Error");
       setModalMessage("Name and Email are required.");
@@ -82,6 +84,7 @@ const AdminProfile = () => {
       return;
     }
 
+    // ! [ERROR] Invalid email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(form.email.trim())) {
       setModalTitle("Validation Error");
@@ -105,6 +108,8 @@ const AdminProfile = () => {
 
       const data = await res.json();
 
+    
+      // ! [ERROR] Backend failure response
       if (!data.success) {
         const cleanMessage = data.message?.replace(/^\[ERROR\]\s*/, "");
         setModalTitle("Save Failed");
@@ -133,7 +138,7 @@ const AdminProfile = () => {
     }
   };
 
-  // *[EFFECT] Fetch profile
+  // * [EFFECT] Fetch profile
   useEffect(() => {
     const fetchProfile = async () => {
       const token = localStorage.getItem("token");
@@ -149,6 +154,7 @@ const AdminProfile = () => {
         });
         const data = await res.json();
 
+        // ! [ERROR] Expired token
         if (!data.success) {
           localStorage.removeItem("token");
           setIsAuthenticated(false);
@@ -180,7 +186,7 @@ const AdminProfile = () => {
     fetchProfile();
   }, []);
 
-  // [EFFECT] Redirect if not authenticated
+  // ? [EFFECT] Redirect if not authenticated
   useEffect(() => {
     if (isAuthenticated === false) navigate("/login/admin");
   }, [isAuthenticated, navigate]);

@@ -29,12 +29,23 @@ function App() {
 
       {/* Protected Routes */}
       <Route element={<Layout />}>
+        {/* [ROUTES] Admin */}
         <Route path="/admin/dashboard" element={<AdminDashboard />} />
+        <Route path="/admin/cashiers" element={<AdminCashiers />} />
+        <Route path="/admin/items" element={<AdminItems />} />
+        <Route path="/admin/transactions" element={<AdminTransactions />} />
+        <Route path="/admin/inventory" element={<AdminInventory />} />
+        <Route path="/admin/categories" element={<AdminCategories />} />
+
+        <Route path="/admin/profile" element={<AdminProfile />} />
+        <Route path="/admin/settings" element={<AdminSettings />} />
+        
+        {/* [ROUTES] Cashier */}
         <Route path="/cashier/dashboard" element={<CashierDashboard />} />
       </Route>
 
       {/* [OPTIONAL] Catch all/404 redirect */}
-      <Route path="*" element={<Navigate to="/login/admin" replace />} />
+      {/* <Route path="*" element={<Navigate to="/login/admin" replace />} /> */}
     </Routes>
   );
 }

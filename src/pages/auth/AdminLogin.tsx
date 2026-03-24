@@ -99,9 +99,8 @@ const AdminLogin = () => {
       setRedirectOnConfirm(true);
       setShowModal(true);
     } catch (err) {
-      console.error(err);
-
       // ![ERROR] Network or server issue
+      console.error(err);
       setModalTitle("Login unsuccessful");
       setModalMessage(
         "Something went wrong while trying to sign you in. Please check your internet connection and try again."

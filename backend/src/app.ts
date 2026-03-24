@@ -14,6 +14,7 @@ import { transactionRoutes } from './routes/transactions';
 import { reportsRoutes } from './routes/reports';
 import { categoryRoutes } from './routes/categories';
 import { subcategoryRoutes } from './routes/subcategories';
+import { orderRoutes } from './routes/orders';
 
 const app: Express = express();
 
@@ -37,6 +38,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/cashiers', cashiersRoutes);
+app.use('/api/orders', orderRoutes);
 app.use('/api/items', itemRoutes);
 app.use('/api/inventory', inventoryRoutes);
 app.use('/api/transactions', transactionRoutes);

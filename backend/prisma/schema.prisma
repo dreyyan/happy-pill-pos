@@ -243,24 +243,23 @@ model OrderItem {
 }
 
 model Customer {
-  id          Int     @id @default(autoincrement())
+  id          Int      @id @default(autoincrement())
+  tableNumber Int      @unique 
   firstName   String
-  lastName    String
-  email       String?
-  phone       String?
-  isActive    Boolean @default(true)
+  pax         Int?
+  isActive    Boolean  @default(true)
 
-  // ? Metadata
+  // Metadata
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  // ? Relations
+  // Relations
   orders      Order[]
 }
 
 model SalesReport {
   id                Int      @id @default(autoincrement())
-  date              DateTime
+  date              DateTime @unique
   totalSales        Float
   totalProfit       Float
   totalTransactions Int

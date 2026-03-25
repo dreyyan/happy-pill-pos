@@ -1,4 +1,5 @@
 // [IMPORT] Hooks
+import React from "react";
 import { useState, useEffect } from "react";
 import { useAuth } from "../../context/useAuth";
 
@@ -6,7 +7,7 @@ import { useAuth } from "../../context/useAuth";
 import PrimaryButton from "../../components/PrimaryButton";
 import CrudModal from "../../components/CrudModal";
 import Modal from "../../components/Modal";
-import React from "react";
+import Skeleton from "../../components/Skeleton";
 
 // ? [INTERFACES]
 interface Subcategory {
@@ -272,14 +273,12 @@ const AdminCategories = () => {
     }
   };
 
-  // [LOADING / ERROR STATE]
-  if (loading) return <p>Loading categories...</p>;
-  if (error) return <p className="text-red-500">{error}</p>;
+  // ? [LOADING STATE]
+  if (loading) return <Skeleton />;
 
   return (
     <div className="py-10 px-4 space-y-4">
-
-      {/* ================= DELETE CATEGORY MODAL ================= */}
+      {/* [CRUD MODAL] Delete Category */}
       {showDeleteCategoryModal && categoryToDelete && (
         <Modal
           isOpen={showDeleteCategoryModal}
@@ -295,8 +294,7 @@ const AdminCategories = () => {
           </p>
         </Modal>
       )}
-
-      {/* ================= DELETE SUBCATEGORY MODAL ================= */}
+      {/* [CRUD MODAL] Delete Subcategory */}
       {showDeleteSubModal && subToDelete && (
         <Modal
           isOpen={showDeleteSubModal}
@@ -312,7 +310,7 @@ const AdminCategories = () => {
         </Modal>
       )}
 
-      {/* ================= CREATE CATEGORY MODAL ================= */}
+      {/* [CRUD MODAL] Create Category */}
       <CrudModal<CategoryForm>
         isOpen={showCategoryModal}
         title="Create Category"
@@ -329,7 +327,7 @@ const AdminCategories = () => {
         ]}
       />
 
-      {/* ================= EDIT CATEGORY MODAL ================= */}
+      {/* [CRUD MODAL] Edit Category */}
       <CrudModal<CategoryForm>
         isOpen={showEditCategoryModal}
         title="Edit Category"
@@ -346,7 +344,7 @@ const AdminCategories = () => {
         ]}
       />
 
-      {/* ================= CREATE SUBCATEGORY MODAL ================= */}
+      {/* [CRUD MODAL] Create Subcategory */}
       <CrudModal<SubcategoryForm>
         isOpen={showSubModal}
         title="Create Subcategory"
@@ -372,7 +370,7 @@ const AdminCategories = () => {
         ]}
       />
 
-      {/* ================= EDIT SUBCATEGORY MODAL ================= */}
+      {/* [CRUD MODAL] Edit Subcategory */}
       <CrudModal<EditSubcategoryForm>
         isOpen={showEditSubModal}
         title="Edit Subcategory"
@@ -388,12 +386,13 @@ const AdminCategories = () => {
         ]}
       />
 
-      {/* ================= HEADER ================= */}
+      {/* [SECTION] Header */}
       <div className="flex flex-col items-center">
+        {/* [UI] Page Title */}
         <h1 className="font-bold text-2xl">Category Management</h1>
       </div>
 
-      {/* ================= ACTION BUTTONS ================= */}
+      {/* [SECTION] Action Buttons */}
       <div className="flex flex-col gap-2">
         <PrimaryButton
           text="Add Category"
@@ -414,7 +413,7 @@ const AdminCategories = () => {
         />
       </div>
 
-      {/* ================= CATEGORY LIST ================= */}
+      {/* [SECTION] Category List */}
       <div className="space-y-4 mt-4 px-4 py-4 bg-bg-50 rounded-md">
         <h3 className="text-text-700">Categories</h3>
 
@@ -422,87 +421,89 @@ const AdminCategories = () => {
           <p className="text-center text-gray-500">No categories found</p>
         )}
 
-        {categories.map((category, idx) => {
-          const bgColor = colorPalette[idx % colorPalette.length];
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* [SECTION] Categories Display */}
+          {categories.map((category, idx) => {
+            const bgColor = colorPalette[idx % colorPalette.length];
+            return (
+              <div
+                key={category.id}
+                className={`relative rounded-md p-4 shadow-sm ${bgColor} text-white`}
+              >
+                {/* [UI] Category Action Buttons */}
+                <div className="absolute top-3 right-3 flex items-center gap-1">
+                  {/* [BUTTON] Edit Category */}
+                  <button
+                    className="text-white font-bold p-2 h-full rounded hover:bg-white/20 transition-colors"
+                    onClick={() => {
+                      setEditingCategory(category);
+                      setEditCategoryForm({ name: category.name, description: category.description ?? "" });
+                      setEditCategoryError("");
+                      setShowEditCategoryModal(true);
+                    }}
+                  >
+                    <img src="/edit-filled-icon.svg" alt="Edit" className="w-4 h-4 brightness-0 invert" />
+                  </button>
 
-          return (
-            <div
-              key={category.id}
-              className={`relative rounded-md p-4 shadow-sm ${bgColor} text-white`}
-            >
-              {/* [UI] Category action buttons */}
-              <div className="absolute top-3 right-3 flex items-center gap-1">
-                {/* Edit Category */}
-                <button
-                  className="text-white font-bold px-2 py-1 rounded hover:bg-white/20 transition-colors"
-                  onClick={() => {
-                    setEditingCategory(category);
-                    setEditCategoryForm({ name: category.name, description: category.description ?? "" });
-                    setEditCategoryError("");
-                    setShowEditCategoryModal(true);
-                  }}
-                >
-                  <img src="/edit-filled-icon.svg" alt="Edit" className="w-4 h-4 brightness-0 invert" />
-                </button>
+                  {/* [BUTTON] Delete Category */}
+                  <button
+                    className="text-white font-bold p-1 rounded hover:bg-red-600 bg-red-500 transition-colors"
+                    onClick={() => {
+                      setCategoryToDelete(category);
+                      setShowDeleteCategoryModal(true);
+                    }}
+                  >
+                    <img src="/close-icon.svg" alt="Close" className="size-5 brightness-0 invert" />
+                  </button>
+                </div>
 
-                {/* Delete Category */}
-                <button
-                  className="text-white font-bold px-2 py-1 rounded hover:bg-red-600 bg-red-500 transition-colors"
-                  onClick={() => {
-                    setCategoryToDelete(category);
-                    setShowDeleteCategoryModal(true);
-                  }}
-                >
-                  ✕
-                </button>
-              </div>
+                {/* [UI] Category Info */}
+                <h2 className="font-bold text-lg pr-20">{category.name}</h2>
+                {category.description && <p className="text-sm text-white/80">{category.description}</p>}
 
-              {/* [UI] Category info */}
-              <h2 className="font-bold text-lg pr-20">{category.name}</h2>
-              {category.description && <p className="text-sm text-white/80">{category.description}</p>}
+                {/* [UI] Subcategory List */}
+                <div className="mt-3 pl-2 space-y-1">
+                  {(category.subcategories ?? []).length === 0 ? (
+                    <p className="text-sm text-white/80">No subcategories</p>
+                  ) : (
+                    category.subcategories.map((sub) => (
+                      <div key={sub.id} className="flex items-center justify-between gap-2 group">
+                        <p className="text-sm">• {sub.name}</p>
 
-              {/* [UI] Subcategory list */}
-              <div className="mt-3 pl-2 space-y-1">
-                {(category.subcategories ?? []).length === 0 ? (
-                  <p className="text-sm text-white/80">No subcategories</p>
-                ) : (
-                  category.subcategories.map((sub) => (
-                    <div key={sub.id} className="flex items-center justify-between gap-2 group">
-                      <p className="text-sm">• {sub.name}</p>
+                        {/* [UI] Subcategory Action Buttons */}
+                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          {/* [BUTTON] Edit Subcategory */}
+                          <button
+                            className="text-white p-1 rounded hover:bg-white/20 transition-colors"
+                            onClick={() => {
+                              setEditingSub(sub);
+                              setEditSubForm({ name: sub.name });
+                              setEditSubError("");
+                              setShowEditSubModal(true);
+                            }}
+                          >
+                            <img src="/edit-filled-icon.svg" alt="Edit" className="w-3.5 h-3.5 brightness-0 invert" />
+                          </button>
 
-                      {/* [UI] Subcategory action buttons */}
-                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        {/* Edit Subcategory */}
-                        <button
-                          className="text-white p-1 rounded hover:bg-white/20 transition-colors"
-                          onClick={() => {
-                            setEditingSub(sub);
-                            setEditSubForm({ name: sub.name });
-                            setEditSubError("");
-                            setShowEditSubModal(true);
-                          }}
-                        >
-                          <img src="/edit-filled-icon.svg" alt="Edit" className="w-3.5 h-3.5 brightness-0 invert" />
-                        </button>
-
-                        {/* Delete Subcategory */}
-                        <button
-                          className="text-white p-1 rounded hover:bg-red-600 bg-red-500/70 transition-colors text-xs font-bold"
-                          onClick={() => {
-                            setSubToDelete({ sub, categoryId: category.id });
-                            setShowDeleteSubModal(true);
-                          }}
-                        >
-                          ✕
-                        </button>
+                          {/* [BUTTON] Delete Subcategory */}
+                          <button
+                            className="text-white p-1 rounded hover:bg-red-600 bg-red-500/70 transition-colors text-xs font-bold"
+                            onClick={() => {
+                              setSubToDelete({ sub, categoryId: category.id });
+                              setShowDeleteSubModal(true);
+                            }}
+                          >
+                            <img src="/close-icon.svg" alt="Close" className="size-3 brightness-0 invert" />
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  ))
-                )}
+                    ))
+                  )}
+                </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
     </div>
   );

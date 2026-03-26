@@ -43,7 +43,15 @@ const Header = () => {
 
     const fetchProfile = async () => {
       try {
-        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/admin/profile`, {
+        const storedRole = localStorage.getItem("role") || "";
+
+        // Determine correct endpoint
+        let endpoint = "";
+        if (storedRole === "Admin") endpoint = "/api/admin/profile";
+        else if (storedRole === "Cashier") endpoint = "/api/cashier/profile";
+        else return handleLogout();
+
+        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}${endpoint}`, {
           headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
         });
 
@@ -62,6 +70,7 @@ const Header = () => {
         setProfileName(data.data.name);
         setRole(data.data.role === "ADMIN" ? "Admin" : "Cashier");
         setIsLoggedIn(true);
+
       } catch (err) {
         console.error("Error fetching profile:", err);
         handleLogout();

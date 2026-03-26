@@ -7,13 +7,13 @@ import { successResponse, errorResponse } from '../../utils/response';
 import { error, info } from '../../utils/logger';
 
 // [IMPORT] Middleware
-import { verifyAdmin } from '../../middleware/authMiddleware';
+import { verifyRole } from '../../middleware/authMiddleware';
 
 const router = Router();
 
 // * [GET] Get Admin Dashboard Summary
 // ? /api/admin/dashboard/summary
-router.get('/summary', verifyAdmin, async (req: Request, res: Response, next: NextFunction) => {
+router.get('/summary', verifyRole(['ADMIN']), async (req: Request, res: Response, next: NextFunction) => {
     try {
         // [1] Fetch current user from middleware
         // eslint-disable-next-line @typescript-eslint/no-explicit-any

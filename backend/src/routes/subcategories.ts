@@ -185,7 +185,7 @@ router.patch('/:id/reactivate', verifyRole(['ADMIN']), async (req: Request, res:
     }
 });
 
-// * [DELETE] Soft Delete Subcategory
+// * [DELETE] Delete Subcategory (Soft)
 // ? /api/subcategories/:id
 router.delete('/:id', verifyRole(['ADMIN']), async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
@@ -219,7 +219,7 @@ router.delete('/:id', verifyRole(['ADMIN']), async (req: Request, res: Response,
     }
 });
 
-// * [DELETE] Hard Delete Subcategory
+// * [DELETE] Delete Subcategory (Hard)
 // ? /api/subcategories/:id/hard
 router.delete('/:id/hard', verifyRole(['ADMIN']), async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;

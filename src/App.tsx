@@ -20,7 +20,10 @@ import AdminSettings from "./pages/admin/AdminSettings";
 
 // [IMPORT] Pages: Cashier
 import CashierLogin from "./pages/auth/CashierLogin";
-import CashierDashboard from "./pages/admin/CashierDashboard";
+import CashierDashboard from "./pages/cashier/CashierDashboard";
+import CashierOrders from "./pages/cashier/CashierOrders";
+import CashierTransactions from "./pages/cashier/CashierTransactions";
+import CashierProfile from "./pages/cashier/CashierProfile";
 
 // [IMPORT] Context & Layout
 import PrivateRoute from "./context/PrivateRoute";
@@ -125,6 +128,30 @@ function App() {
           element={
             <PrivateRoute>
               <CashierDashboard />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/cashier/orders"
+          element={
+            <PrivateRoute>
+              <CashierOrders />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/cashier/transactions"
+          element={
+            <PrivateRoute>
+              <CashierTransactions />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/cashier/profile"
+          element={
+            <PrivateRoute>
+              <CashierProfile />
             </PrivateRoute>
           }
         />

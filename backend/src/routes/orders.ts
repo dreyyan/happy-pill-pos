@@ -155,7 +155,7 @@ router.post('/', verifyRole(['ADMIN', 'CASHIER']), async (req: Request, res: Res
       for (const oi of orderItems) {
         const item = await tx.item.findUnique({
           where: { id: oi.itemId },
-          select: { id: true, name: true, price: true },
+          select: { id: true, name: true, price: true, cost: true },
         });
 
         // ! [ERROR] Non-existing item
@@ -170,6 +170,7 @@ router.post('/', verifyRole(['ADMIN', 'CASHIER']), async (req: Request, res: Res
           itemId: oi.itemId,
           quantity: oi.quantity,
           priceAtOrder: item.price,
+          costAtOrder: item.cost || 0,
           itemName: item.name,
           subtotal,
         });
@@ -288,7 +289,7 @@ router.put('/:id', verifyRole(['ADMIN', 'CASHIER']), async (req: Request, res: R
               itemId: oi.itemId,
               itemName: oi.itemName,
               priceAtSale: oi.priceAtOrder,
-              costAtSale: oi.item.cost || 0,
+              costAtSale: oi.costAtOrder ?? oi.item.cost ?? 0,
               quantity: oi.quantity,
               subtotal: oi.subtotal,
             }
@@ -301,13 +302,38 @@ router.put('/:id', verifyRole(['ADMIN', 'CASHIER']), async (req: Request, res: R
           });
         }
 
+        // [4.5] Get today's date in UTC midnight for consistent SalesReport keying
         const today = new Date();
-        today.setHours(0, 0, 0, 0);
+        today.setUTCHours(0, 0, 0, 0);
 
         // [4.5] Compute profit
         const profit = order.orderItems.reduce((sum, oi) => {
-          return sum + (oi.priceAtOrder - (oi.item.cost || 0)) * oi.quantity;
+          return sum + (oi.priceAtOrder - (oi.costAtOrder ?? oi.item.cost ?? 0)) * oi.quantity;
         }, 0);
+
+        // // [DEBUG] Profit check — remove after confirming
+        // console.log("Order items profit breakdown:");
+        // order.orderItems.forEach(oi => {
+        //   console.log({
+        //     item: oi.itemName,
+        //     priceAtOrder: oi.priceAtOrder,
+        //     costAtOrder: oi.costAtOrder,
+        //     itemCost: oi.item.cost,
+        //     quantity: oi.quantity,
+        //     lineProfit: (oi.priceAtOrder - (oi.costAtOrder ?? oi.item.cost ?? 0)) * oi.quantity,
+        //   });
+        // });
+        // console.log("Total profit:", profit);
+        // console.log("Total sales:", totalAmount);
+
+        // // [DEBUG] — remove after confirming
+        // console.log("Today UTC:", today.toISOString());
+        // console.log("Today getTime:", today.getTime());
+
+        // const existing = await tx.salesReport.findFirst({
+        //   where: { date: today }
+        // });
+        // console.log("Existing report found:", existing);
 
         // [4.6] Create sales report
         await tx.salesReport.upsert({

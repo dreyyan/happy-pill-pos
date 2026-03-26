@@ -12,18 +12,18 @@ const TrustBadge: React.FC<TrustBadgeProps> = ({
   description,
 }) => {
   return (
-    <div className="flex flex-col items-center text-center gap-2">
-      {/* Icon */}
+    <div className="flex flex-col items-center text-center gap-2 bg-bg-50 p-4 py-6 rounded-md">
+      {/* [UI] Icon */}
       <div className="bg-primary-600 p-3 rounded-full">
         <img src={iconSrc} alt={title} className="w-6 h-6" />
       </div>
 
-      {/* Title */}
+      {/* [UI] Title */}
       <h4 className="text-text-900">
         {title}
       </h4>
 
-      {/* Description */}
+      {/* [UI] Description */}
       <p className="text-caption text-text-600">
         {description}
       </p>

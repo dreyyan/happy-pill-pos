@@ -30,6 +30,7 @@ import PrivateRoute from "./context/PrivateRoute";
 import Layout from "./Layout";
 import CashierSalesReport from "./pages/cashier/CashierSalesReport";
 import CashierInventory from "./pages/cashier/CashierInventory";
+import CashierItems from "./pages/cashier/CashierItems";
 
 function App() {
   return (
@@ -154,6 +155,14 @@ function App() {
           element={
             <PrivateRoute>
               <CashierTransactions />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/cashier/items"
+          element={
+            <PrivateRoute>
+              <CashierItems />
             </PrivateRoute>
           }
         />

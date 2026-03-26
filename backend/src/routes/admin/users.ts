@@ -8,37 +8,39 @@ import { error, info } from '../../utils/logger';
 import { hashPassword } from '../../utils/auth';
 
 // [IMPORT] Middleware
-import { verifyAdmin } from '../../middleware/authMiddleware';
+import { verifyRole } from '../../middleware/authMiddleware';
 
 const router = Router();
 
 // * [GET] Get All Users (Name + Role)
 // ? /api/admin/users
-router.get('/', verifyAdmin, async (req: Request, res: Response, next: NextFunction) => {
+router.get('/', verifyRole(['ADMIN']), async (req: Request, res: Response, next: NextFunction) => {
     try {
         // [1] Fetch all Admins
         const admins = await prisma.admin.findMany({
             include: { user: true }
         });
 
+        // [2] Format admin information
         const adminsMapped = admins.map(a => ({
             name: `${a.user.firstName} ${a.user.lastName}`,
             role: a.user.role,
             email: a.user.email
         }));
 
-        // [2] Fetch all Cashiers
+        // [3] Fetch all Cashiers
         const cashiers = await prisma.cashier.findMany({
             include: { user: true }
         });
 
+        // [4] Format cashier information
         const cashiersMapped = cashiers.map(c => ({
             name: `${c.user.firstName} ${c.user.lastName}`,
             role: c.user.role,
             email: c.user.email
         }));
 
-        // [3] Combine both results
+        // [5] Combine both results
         const allUsers = [...adminsMapped, ...cashiersMapped];
 
         // * [SUCCESS] Return all users
@@ -56,8 +58,9 @@ router.get('/', verifyAdmin, async (req: Request, res: Response, next: NextFunct
 
 // * [GET] Get All Admins
 // ? /api/admin/users/admins
-router.get('/admins', verifyAdmin, async (req: Request, res: Response, next: NextFunction) => {
+router.get('/admins', verifyRole(['ADMIN']), async (req: Request, res: Response, next: NextFunction) => {
     try {
+        // [1] Find all admins
         const admins = await prisma.admin.findMany({
             include: { user: true }
         });
@@ -87,7 +90,7 @@ router.get('/admins', verifyAdmin, async (req: Request, res: Response, next: Nex
 
 // * [POST] Create Admin
 // ? /api/admin/users
-router.post('/', verifyAdmin, async (req: Request, res: Response, next: NextFunction) => {
+router.post('/', verifyRole(['ADMIN']), async (req: Request, res: Response, next: NextFunction) => {
     const { email, password, firstName, lastName } = req.body;
     try {
         // [1] Hash password
@@ -127,9 +130,10 @@ router.post('/', verifyAdmin, async (req: Request, res: Response, next: NextFunc
 
 // * [GET] Get Single Admin
 // ? /api/admin/users/:id
-router.get('/:id', verifyAdmin, async (req: Request, res: Response, next: NextFunction) => {
+router.get('/:id', verifyRole(['ADMIN']), async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
     try {
+        // [1] Fetch admin with specific 'id'
         const admin = await prisma.admin.findUnique({
             where: { id: Number(id) },
             include: { user: true }
@@ -143,7 +147,6 @@ router.get('/:id', verifyAdmin, async (req: Request, res: Response, next: NextFu
         // [2] Remove password from user
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { password: _, ...userWithoutPassword } = admin.user;
-
         const adminWithoutPassword = { ...admin, user: userWithoutPassword };
 
         // * [SUCCESS] Return admin
@@ -164,7 +167,7 @@ router.get('/:id', verifyAdmin, async (req: Request, res: Response, next: NextFu
 
 // * [PUT] Update Admin
 // ? /api/admin/users/:id
-router.put('/:id', verifyAdmin, async (req: Request, res: Response, next: NextFunction) => {
+router.put('/:id', verifyRole(['ADMIN']), async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
     const { email, firstName, lastName } = req.body;
 
@@ -213,15 +216,13 @@ router.put('/:id', verifyAdmin, async (req: Request, res: Response, next: NextFu
             error(`Error updating admin with id ${id}: ${JSON.stringify(err)}`);
         }
         res.status(500).json(errorResponse(errorMessage));
-
-        // ! [ERROR] Forward to global error handler
         next(err);
     }
 });
 
 // * [PATCH] Reactivate Admin
 // ? /api/admin/users/:id/reactivate
-router.patch('/:id/reactivate', verifyAdmin, async (req: Request, res: Response, next: NextFunction) => {
+router.patch('/:id/reactivate', verifyRole(['ADMIN']), async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
 
     try {
@@ -263,11 +264,12 @@ router.patch('/:id/reactivate', verifyAdmin, async (req: Request, res: Response,
 
 // * [PATCH] Soft delete all admins (except self)
 // ? /api/admin/users/delete-all
-router.patch('/delete-all', verifyAdmin, async (req, res, next) => {
+router.patch('/delete-all', verifyRole(['ADMIN']), async (req, res, next) => {
     try {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const currentUserId = (req as any).user?.userId;
 
+        // [1] Soft delete all admins
         const result = await prisma.user.updateMany({
             where: {
                 role: 'ADMIN',
@@ -276,6 +278,7 @@ router.patch('/delete-all', verifyAdmin, async (req, res, next) => {
             data: { isActive: false }
         });
 
+        // * [SUCCESS] All admins soft deleted 
         info(`Soft-deleted ${result.count} admins`);
         res.json(successResponse(`${result.count} admins soft-deleted`, result));
     } catch (err: unknown) {
@@ -289,7 +292,7 @@ router.patch('/delete-all', verifyAdmin, async (req, res, next) => {
 
 // * [DELETE] Delete Admin (Soft Delete)
 // ? /api/admin/users/:id
-router.delete('/:id', verifyAdmin, async (req: Request, res: Response, next: NextFunction) => {
+router.delete('/:id', verifyRole(['ADMIN']), async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
     try {
         // [1] Fetch the user to ensure they exist
@@ -310,7 +313,7 @@ router.delete('/:id', verifyAdmin, async (req: Request, res: Response, next: Nex
             include: { admin: true }
         });
 
-        // * [SUCCESS] Admin soft-deleted successfully
+        // * [SUCCESS] Admin soft-deleted
         info(`Admin with id ${id} soft-deleted successfully`);
         res.json(successResponse("Admin deleted successfully (soft delete)", softDeletedUser));
     } catch (err: unknown) {
@@ -322,15 +325,13 @@ router.delete('/:id', verifyAdmin, async (req: Request, res: Response, next: Nex
             error(`Error deleting admin with id ${id}: ${JSON.stringify(err)}`);
         }
         res.status(500).json(errorResponse(errorMessage));
-
-        // ! [ERROR] Forward to global error handler
         next(err);
     }
 });
 
 // * [DELETE] Hard Delete Admin
 // ? /api/admin/users/:id/hard
-router.delete('/:id/hard', verifyAdmin, async (req: Request, res: Response, next: NextFunction) => {
+router.delete('/:id/hard', verifyRole(['ADMIN']), async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
 
     try {
@@ -354,7 +355,6 @@ router.delete('/:id/hard', verifyAdmin, async (req: Request, res: Response, next
         await prisma.admin.delete({
             where: { id: existingUser.admin.id }
         });
-
         await prisma.user.delete({
             where: { id: Number(id) }
         });

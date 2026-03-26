@@ -7,13 +7,13 @@ import { successResponse, errorResponse } from '../utils/response';
 import { error, info } from '../utils/logger';
 
 // [IMPORT] Middleware
-import { verifyAdminOrCashier } from '../middleware/authMiddleware';
+import { verifyRole } from '../middleware/authMiddleware';
 
 const router = Router();
 
 // * [GET] Get All Transactions
 // ? /api/transactions/
-router.get('/', verifyAdminOrCashier, async (req: Request, res: Response, next: NextFunction) => {
+router.get('/', verifyRole(['ADMIN', 'CASHIER']), async (req: Request, res: Response, next: NextFunction) => {
     try {
         const transactions = await prisma.transaction.findMany({
             where: { isActive: true },
@@ -51,7 +51,7 @@ router.get('/', verifyAdminOrCashier, async (req: Request, res: Response, next: 
 
 // * [GET] Get Single Transaction
 // ? /api/transactions/:id
-router.get('/:id', verifyAdminOrCashier, async (req: Request, res: Response, next: NextFunction) => {
+router.get('/:id', verifyRole(['ADMIN', 'CASHIER']), async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
 
     try {
@@ -93,7 +93,7 @@ router.get('/:id', verifyAdminOrCashier, async (req: Request, res: Response, nex
 
 // * [POST] Create Transaction (POS Checkout)
 // ? /api/transactions/
-router.post('/', verifyAdminOrCashier, async (req: Request, res: Response, next: NextFunction) => {
+router.post('/', verifyRole(['ADMIN', 'CASHIER']), async (req: Request, res: Response, next: NextFunction) => {
     const {
         cashierId,
         items,
@@ -237,7 +237,7 @@ router.post('/', verifyAdminOrCashier, async (req: Request, res: Response, next:
 
 // * [PUT] Void Transaction
 // ? /api/transactions/:id/void
-router.put('/:id/void', verifyAdminOrCashier, async (req: Request, res: Response, next: NextFunction) => {
+router.put('/:id/void', verifyRole(['ADMIN', 'CASHIER']), async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
 
     try {
@@ -296,7 +296,7 @@ router.put('/:id/void', verifyAdminOrCashier, async (req: Request, res: Response
 
 // * [DELETE] Delete Transaction (Soft Delete)
 // ? /api/transactions/:id
-router.delete('/:id', verifyAdminOrCashier, async (req: Request, res: Response, next: NextFunction) => {
+router.delete('/:id', verifyRole(['ADMIN', 'CASHIER']), async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
 
     try {

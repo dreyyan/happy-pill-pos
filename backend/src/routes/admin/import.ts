@@ -54,12 +54,19 @@ router.post('/', verifyRole(['ADMIN']), upload.single('file'), async (req: Reque
 
     let createdCount = 0;
 
+    // [2.1] Track duplicates inside CSV (case-insensitive)
+    const seenEmails = new Set<string>();
+
     // [3] Process each record sequentially
     for (const [index, row] of records.entries()) {
       console.log(`[CSV IMPORT] Processing row ${index + 1}:`, row);
 
       const name = row['Name']?.trim() || row['name']?.trim();
-      const email = row['Email']?.trim() || row['email']?.trim();
+
+      // [3.1] Normalize email (trim + lowercase + remove hidden spaces)
+      const rawEmail = row['Email'] || row['email'] || "";
+      const email = rawEmail.trim().toLowerCase();
+
       const roleRaw = row['Role']?.trim() || row['role']?.trim();
 
       // ! [ERROR] Missing required fields: name, role, email
@@ -67,6 +74,13 @@ router.post('/', verifyRole(['ADMIN']), upload.single('file'), async (req: Reque
         console.warn(`[CSV IMPORT] Skipping row ${index + 1}: missing required fields`);
         continue;
       }
+
+      // ! [ERROR] Duplicate email inside CSV
+      if (seenEmails.has(email)) {
+        console.warn(`[CSV IMPORT] Skipping row ${index + 1}: duplicate email in CSV "${email}"`);
+        continue;
+      }
+      seenEmails.add(email);
 
       // ! [ERROR] Invalid role
       const role = roleRaw.toUpperCase();
@@ -78,8 +92,11 @@ router.post('/', verifyRole(['ADMIN']), upload.single('file'), async (req: Reque
       const [firstName, ...lastParts] = name.split(" ");
       const lastName = lastParts.join(" ") || "";
 
-      // ? [WARN] Skip import for already existing users
-      const existing = await prisma.user.findUnique({ where: { email } });
+      // ? [WARN] Skip import for already existing users in DB
+      const existing = await prisma.user.findUnique({
+        where: { email },
+      });
+
       if (existing) {
         console.warn(`[CSV IMPORT] Skipping row ${index + 1}: email "${email}" already exists`);
         continue;
@@ -107,7 +124,16 @@ router.post('/', verifyRole(['ADMIN']), upload.single('file'), async (req: Reque
         // * [SUCCESS] User created
         console.log(`[CSV IMPORT] Created user: ${email} (${role})`);
         createdCount++;
-      } catch (createErr) {
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } catch (createErr: any) {
+
+        // ! [ERROR] Handle unique constraint violation (race-condition safe)
+        if (createErr?.code === "P2002") {
+          console.warn(`[CSV IMPORT] Skipping row ${index + 1}: duplicate email "${email}" (DB constraint)`);
+          continue;
+        }
+
         console.error(`[CSV IMPORT] Failed to create user "${email}":`, createErr);
       }
     }

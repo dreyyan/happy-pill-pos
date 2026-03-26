@@ -41,7 +41,20 @@ router.get('/', verifyRole(['ADMIN']), async (req: Request, res: Response, next:
         }));
 
         // [5] Combine both results
-        const allUsers = [...adminsMapped, ...cashiersMapped];
+        const combined = [...adminsMapped, ...cashiersMapped];
+
+        // [5.1] Remove duplicates by email
+        const uniqueMap = new Map<string, typeof combined[0]>();
+
+        combined.forEach(u => {
+            if (!uniqueMap.has(u.email)) {
+                uniqueMap.set(u.email, u);
+            } else {
+                console.warn(`[USER LIST] Duplicate user detected across roles: ${u.email}`);
+            }
+        });
+
+        const allUsers = Array.from(uniqueMap.values());
 
         // * [SUCCESS] Return all users
         info(`Fetched ${admins.length} admins and ${cashiers.length} cashiers (name + role)`);

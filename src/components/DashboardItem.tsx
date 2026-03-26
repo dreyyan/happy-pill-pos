@@ -4,7 +4,7 @@ import React from "react";
 interface DashboardProps {
   iconSrc?: string;
   text: string;
-  value: number;
+  value: number | string;
 }
 
 const DashboardItem: React.FC<DashboardProps> = ({ iconSrc, text, value }) => {

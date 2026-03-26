@@ -338,7 +338,7 @@ router.patch('/:id/restore', verifyRole(['ADMIN']), async (req: Request, res: Re
   }
 });
 
-// * [DELETE] Soft Delete Inventory Log (Revert Item Quantity)
+// * [DELETE] Delete Inventory Log (Soft | Revert Item Quantity)
 // ? /api/inventory/:id
 router.delete('/:id', verifyRole(['ADMIN']), async (req: Request, res: Response, next: NextFunction) => {
   const { id } = req.params;

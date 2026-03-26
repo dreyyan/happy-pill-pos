@@ -188,7 +188,7 @@ router.put('/:id', verifyRole(['ADMIN']), async (req: Request, res: Response, ne
     }
 });
 
-// * [DELETE] Delete Cashier (Soft Delete)
+// * [DELETE] Delete Cashier (Soft)
 // ? /api/cashiers/:id
 router.delete('/:id', verifyRole(['ADMIN']), async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
@@ -227,7 +227,7 @@ router.delete('/:id', verifyRole(['ADMIN']), async (req: Request, res: Response,
     }
 });
 
-// * [DELETE] Hard Delete Cashier
+// * [DELETE] Delete Cashier (Hard)
 // ? /api/cashiers/:id/hard
 router.delete('/:id/hard', verifyRole(['ADMIN']), async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;

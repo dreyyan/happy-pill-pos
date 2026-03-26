@@ -262,7 +262,7 @@ router.patch('/:id/reactivate', verifyRole(['ADMIN']), async (req: Request, res:
     }
 });
 
-// * [PATCH] Soft delete all admins (except self)
+// * [PATCH] Delete all admins (Soft | Except self)
 // ? /api/admin/users/delete-all
 router.patch('/delete-all', verifyRole(['ADMIN']), async (req, res, next) => {
     try {
@@ -290,7 +290,7 @@ router.patch('/delete-all', verifyRole(['ADMIN']), async (req, res, next) => {
     }
 });
 
-// * [DELETE] Delete Admin (Soft Delete)
+// * [DELETE] Delete Admin (Soft)
 // ? /api/admin/users/:id
 router.delete('/:id', verifyRole(['ADMIN']), async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
@@ -329,7 +329,7 @@ router.delete('/:id', verifyRole(['ADMIN']), async (req: Request, res: Response,
     }
 });
 
-// * [DELETE] Hard Delete Admin
+// * [DELETE] Delete Admin (Hard)
 // ? /api/admin/users/:id/hard
 router.delete('/:id/hard', verifyRole(['ADMIN']), async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;

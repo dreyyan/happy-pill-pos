@@ -7,7 +7,7 @@ import { prisma } from './lib/prisma';
 // [IMPORT] Routes
 import { authRoutes } from './routes/auth';
 import { itemRoutes } from './routes/item';
-import { adminRoutes } from './routes/admin/index';
+import { adminRoutes } from './routes/admin';
 import { cashiersRoutes } from './routes/cashiers';
 import { inventoryRoutes } from './routes/inventory';
 import { transactionRoutes } from './routes/transactions';
@@ -19,14 +19,14 @@ import { customerRoutes } from './routes/admin/customers';
 
 const app: Express = express();
 
-// [MIDDLEWARE] CORS and JSON parsing
+// [MIDDLEWARE] CORS
+app.use(cors({
+  origin: process.env.FRONTEND_URL,
+  credentials: true,
+}));
+
+// [MIDDLEWARE] JSON parsing
 app.use(express.json());
-app.use(
-  cors({
-    origin: process.env.FRONTEND_URL,
-    credentials: true,
-  })
-);
 
 // [MIDDLEWARE] Request Logging
 app.use((req: Request, res: Response, next: NextFunction) => {
@@ -47,6 +47,11 @@ app.use('/api/reports', reportsRoutes);
 app.use('/api/customers', customerRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/subcategories', subcategoryRoutes);
+
+// [MIDDLEWARE] 404 Not Found
+app.use((req: Request, res: Response) => {
+  res.status(404).json({ error: 'Route not found' });
+});
 
 // [MIDDLEWARE] Error Handling
 interface AppError extends Error {

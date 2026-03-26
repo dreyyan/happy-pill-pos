@@ -8,14 +8,15 @@ import { error, info } from '../utils/logger';
 import { hashPassword } from '../utils/auth';
 
 // [IMPORT] Middleware
-import { verifyAdmin, verifyAdminOrCashier } from '../middleware/authMiddleware';
+import { verifyRole } from '../middleware/authMiddleware';
 
 const router = Router();
 
 // * [GET] Get All Cashiers
 // ? /api/cashiers/
-router.get('/', verifyAdminOrCashier, async (req: Request, res: Response, next: NextFunction) => {
+router.get('/', verifyRole(['CASHIER']), async (req: Request, res: Response, next: NextFunction) => {
     try {
+        // [1] Fetch all cashiers
         const cashiers = await prisma.cashier.findMany({
             include: { user: true }
         });
@@ -45,9 +46,10 @@ router.get('/', verifyAdminOrCashier, async (req: Request, res: Response, next: 
 
 // * [GET] Get Single Cashier
 // ? /api/cashiers/:id
-router.get('/:id', verifyAdmin, async (req: Request, res: Response, next: NextFunction) => {
+router.get('/:id', verifyRole(['ADMIN']), async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
     try {
+        // [1] Fetch cashier with specific 'id'
         const cashier = await prisma.cashier.findUnique({
             where: { id: Number(id) },
             include: { user: true }
@@ -81,7 +83,7 @@ router.get('/:id', verifyAdmin, async (req: Request, res: Response, next: NextFu
 
 // * [POST] Create Cashier
 // ? /api/cashiers/
-router.post('/', verifyAdmin, async (req: Request, res: Response, next: NextFunction) => {
+router.post('/', verifyRole(['ADMIN']), async (req: Request, res: Response, next: NextFunction) => {
     const { email, password, firstName, lastName } = req.body;
     try {
         // [1] Hash password
@@ -122,7 +124,7 @@ router.post('/', verifyAdmin, async (req: Request, res: Response, next: NextFunc
 
 // * [PUT] Update Cashier
 // ? /api/cashiers/:id
-router.put('/:id', verifyAdmin, async (req: Request, res: Response, next: NextFunction) => {
+router.put('/:id', verifyRole(['ADMIN']), async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
     const { email, firstName, lastName } = req.body;
 
@@ -143,6 +145,7 @@ router.put('/:id', verifyAdmin, async (req: Request, res: Response, next: NextFu
             where: { id: cashier.userId }
         });
 
+        // ! [ERROR] Cashier profile not found
         if (!existingUser || existingUser.role !== 'CASHIER') {
             return res.status(404).json(errorResponse("Cashier user not found"));
         }
@@ -187,7 +190,7 @@ router.put('/:id', verifyAdmin, async (req: Request, res: Response, next: NextFu
 
 // * [DELETE] Delete Cashier (Soft Delete)
 // ? /api/cashiers/:id
-router.delete('/:id', verifyAdmin, async (req: Request, res: Response, next: NextFunction) => {
+router.delete('/:id', verifyRole(['ADMIN']), async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
     try {
         // [1] Fetch the user to ensure they exist
@@ -226,7 +229,7 @@ router.delete('/:id', verifyAdmin, async (req: Request, res: Response, next: Nex
 
 // * [DELETE] Hard Delete Cashier
 // ? /api/cashiers/:id/hard
-router.delete('/:id/hard', verifyAdmin, async (req: Request, res: Response, next: NextFunction) => {
+router.delete('/:id/hard', verifyRole(['ADMIN']), async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
 
     try {

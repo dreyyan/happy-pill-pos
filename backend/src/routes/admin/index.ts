@@ -10,7 +10,7 @@ import { dashboardRoutes } from './dashboard';
 
 const router = Router();
 
-// Sub-routes
+// * Sub-routes
 router.use('/profile', profileRoutes);
 router.use('/change-password', passwordRoutes);
 router.use('/users', userRoutes);

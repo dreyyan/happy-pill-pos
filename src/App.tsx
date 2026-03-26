@@ -14,6 +14,7 @@ import AdminInventory from "./pages/admin/AdminInventory";
 import AdminItems from "./pages/admin/AdminItems";
 import AdminCategories from "./pages/admin/AdminCategories";
 import AdminCashiers from "./pages/admin/AdminCashiers";
+import AdminSalesReport from "./pages/admin/AdminSalesReport";
 import AdminProfile from "./pages/admin/AdminProfile";
 import AdminSettings from "./pages/admin/AdminSettings";
 
@@ -90,6 +91,14 @@ function App() {
           element={
             <PrivateRoute>
               <AdminCategories />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/admin/sales-report"
+          element={
+            <PrivateRoute>
+              <AdminSalesReport />
             </PrivateRoute>
           }
         />

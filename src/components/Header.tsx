@@ -159,6 +159,12 @@ const Header = () => {
                 to="/admin/cashiers"
                 onClick={closeSidebar}
               />
+              <SidebarLink
+                icon="/sales-report-filled-icon.svg"
+                text="Sales Report"
+                to="/admin/sales-report"
+                onClick={closeSidebar}
+              />
             </>
           )}
           {role === "Cashier" && (

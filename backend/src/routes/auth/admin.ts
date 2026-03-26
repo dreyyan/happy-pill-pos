@@ -44,8 +44,6 @@ router.post('/sign-up', async (req: Request, res: Response, next: NextFunction) 
         res.json(successResponse("Admin account created", cashierWithoutPassword));
     } catch (err: unknown) {
         let errorMessage = "An unexpected error occured";
-
-        // ! [ERROR] Return error response
         if (err instanceof Error) {
             errorMessage = err.message;
             error(`Error creating admin for email ${email}: ${errorMessage}`);
@@ -53,8 +51,6 @@ router.post('/sign-up', async (req: Request, res: Response, next: NextFunction) 
             error(`Error creating admin for email ${email}: ${JSON.stringify(err)}`);
         }
         res.json(errorResponse(errorMessage));
-
-        // ! [ERROR] Forward to global error handler
         next(err);
     }
 });
@@ -64,7 +60,6 @@ router.post('/sign-up', async (req: Request, res: Response, next: NextFunction) 
 router.post('/login', async (req: Request, res: Response, next: NextFunction) => {
     const { email, password, rememberMe } = req.body;
 
-    // [1] Perform input validation
     // ! [ERROR] Missing required fields: email, password
     if (!email || !password)
         return res.status(400).json(await errorResponse("Email and password are required"));
@@ -105,8 +100,6 @@ router.post('/login', async (req: Request, res: Response, next: NextFunction) =>
         }));
     } catch (err: unknown) {
         let errorMessage = "An unexpected error occured";
-
-        // ! [ERROR] Return error response
         if (err instanceof Error) {
             errorMessage = err.message;
             error(`Error logging admin with email ${email}: ${errorMessage}`);
@@ -114,8 +107,6 @@ router.post('/login', async (req: Request, res: Response, next: NextFunction) =>
             error(`Error logging in admin with email ${email}: ${JSON.stringify(err)}`);
         }
         res.status(500).json(errorResponse(errorMessage));
-
-        // ! [ERROR] Forward to global error handler
         next(err);
     }
 });

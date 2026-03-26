@@ -45,8 +45,6 @@ router.post('/sign-up', async (req: Request, res: Response, next: NextFunction) 
         res.json(successResponse("Cashier account created", newUser));
     } catch (err: unknown) {
         let errorMessage = "An unexpected error occurred";
-
-        // ! [ERROR] Return error response
         if (err instanceof Error) {
             errorMessage = err.message;
             error(`Error creating cashier for email ${email}: ${errorMessage}`);
@@ -54,8 +52,6 @@ router.post('/sign-up', async (req: Request, res: Response, next: NextFunction) 
             error(`Error creating cashier for email ${email}: ${JSON.stringify(err)}`);
         }
         res.json(errorResponse(errorMessage));
-
-        // ! [ERROR] Forward to global error handler
         next(err);
     }
 });
@@ -107,8 +103,6 @@ router.post('/login', async (req: Request, res: Response, next: NextFunction) =>
         }));
     } catch (err: unknown) {
         let errorMessage = "An unexpected error occurred";
-
-        // ! [ERROR] Return error response
         if (err instanceof Error) {
             errorMessage = err.message;
             error(`Error logging cashier with email ${email}: ${errorMessage}`);
@@ -116,8 +110,6 @@ router.post('/login', async (req: Request, res: Response, next: NextFunction) =>
             error(`Error logging in cashier with email ${email}: ${JSON.stringify(err)}`);
         }
         res.json(errorResponse(errorMessage));
-
-        // ! [ERROR] Forward to global error handler
         next(err);
     }
 });

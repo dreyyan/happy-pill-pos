@@ -7,13 +7,13 @@ import { successResponse, errorResponse } from '../../utils/response';
 import { error, info } from '../../utils/logger';
 
 // [IMPORT] Middleware
-import { verifyAdmin } from '../../middleware/authMiddleware';
+import { verifyRole } from '../../middleware/authMiddleware';
 
 const router = Router();
 
 // * [GET] Get Current Admin Profile
 // ? /api/admin/profile
-router.get('/', verifyAdmin, async (req: Request, res: Response, next: NextFunction) => {
+router.get('/', verifyRole(['ADMIN']), async (req: Request, res: Response, next: NextFunction) => {
     try {
         // [1] Fetch current user from middleware
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -67,7 +67,7 @@ router.get('/', verifyAdmin, async (req: Request, res: Response, next: NextFunct
 
 // * [PUT] Update Current Admin Profile
 // ? /api/admin/profile
-router.put('/', verifyAdmin, async (req: Request, res: Response, next: NextFunction) => {
+router.put('/', verifyRole(['ADMIN']), async (req: Request, res: Response, next: NextFunction) => {
     const { email, firstName, lastName } = req.body;
 
     try {

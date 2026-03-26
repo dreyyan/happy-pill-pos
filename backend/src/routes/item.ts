@@ -7,7 +7,7 @@ import { successResponse, errorResponse } from '../utils/response';
 import { error, info } from '../utils/logger';
 
 // [IMPORT] Middleware
-import { verifyAdmin, verifyAdminOrCashier } from '../middleware/authMiddleware';
+import { verifyRole } from '../middleware/authMiddleware';
 
 // [IMPORT] CSV Parser
 import multer from 'multer';
@@ -18,475 +18,409 @@ const upload = multer({ dest: 'uploads/' });
 
 const router = Router();
 
+// ? [INTERFACE]
+interface CsvProductRow {
+  Name?: string;
+  SKU?: string;
+  "Selling Price": string;
+  Cost: string;
+  Quantity: string;
+  Category?: string;
+  Subcategory?: string;
+  Unit?: string;
+}
 // * [POST] Import Items via CSV
 // ? /api/items/import-items
-router.post(
-  "/import-items",
-  verifyAdmin,
-  upload.single("file"),
-  async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      if (!req.file) return res.status(400).json(errorResponse("CSV file is required"));
+router.post("/import-items", verifyRole(['ADMIN']), upload.single("file"), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    // ! [ERROR] No .csv file uploaded
+    if (!req.file) return res.status(400).json(errorResponse("CSV file is required"));
 
-      // [1] Read file content
-      const fileContent = fs.readFileSync(req.file.path, "utf-8");
-      info(`[CSV IMPORT] File read successfully:\n${fileContent}`);
+    // [1] Read file content
+    const fileContent = fs.readFileSync(req.file.path, "utf-8");
+    info(`[CSV IMPORT] File read successfully:\n${fileContent}`);
 
-      // [2] Parse CSV synchronously with tab delimiter
-      const records = parse(fileContent, {
-        columns: true,
-        skip_empty_lines: true,
-        trim: true,
-        delimiter: "," // use ',' if your CSV is comma-separated; use '\t' for tabs
-      });
-      info(`[CSV IMPORT] Parsed ${records.length} records`);
+    // [2] Parse CSV synchronously with tab delimiter
+    const records = parse(fileContent, {
+      columns: true,
+      skip_empty_lines: true,
+      trim: true,
+      delimiter: ","
+    }) as CsvProductRow[];
+    info(`[CSV IMPORT] Parsed ${records.length} records`);
 
-      let createdCount = 0;
+    let createdCount = 0;
 
-      // [3] Process each record
-      for (let i = 0; i < records.length; i++) {
-        const row = records[i];
-        info(`[CSV IMPORT] Processing row ${i + 1}:`, row);
+    // [3] Process each record
+    for (let i = 0; i < records.length; i++) {
+      const row = records[i];
+      info(`[CSV IMPORT] Processing row ${i + 1}: ${row}`);
 
-        const name = row["Name"]?.trim();
-        const sku = row["SKU"]?.trim();
-        const price = parseFloat(row["Selling Price"]);
-        const cost = parseFloat(row["Cost"]);
-        const quantity = parseInt(row["Quantity"]) || 0;
-        const categoryName = row["Category"]?.trim();
-        const subcategoryName = row["Subcategory"]?.trim();
-        const unit = row["Unit"]?.trim();
+      const name = row["Name"]?.trim();
+      const sku = row["SKU"]?.trim();
+      const price = parseFloat(row["Selling Price"]);
+      const cost = parseFloat(row["Cost"]);
+      const quantity = parseInt(row["Quantity"]) || 0;
+      const categoryName = row["Category"]?.trim();
+      const subcategoryName = row["Subcategory"]?.trim();
+      const unit = row["Unit"]?.trim();
 
-        if (!name || !sku || isNaN(price) || !categoryName || !subcategoryName) {
-          info(`[CSV IMPORT] Skipping row ${i + 1}: missing required fields`);
-          continue;
-        }
-
-        // [4] Check if item SKU already exists
-        const existing = await prisma.item.findUnique({ where: { sku } });
-        if (existing) {
-          info(`[CSV IMPORT] Skipping row ${i + 1}: SKU ${sku} already exists`);
-          continue;
-        }
-
-        // [5] Fetch category
-        let category = await prisma.category.findUnique({ where: { name: categoryName } });
-        if (!category) {
-          category = await prisma.category.create({ data: { name: categoryName } });
-          info(`[CSV IMPORT] Created new category: ${categoryName}`);
-        }
-
-        // [6] Fetch subcategory
-        let subcategory = await prisma.subcategory.findUnique({
-          where: { name_categoryId: { name: subcategoryName, categoryId: category.id } }
-        });
-        if (!subcategory) {
-          subcategory = await prisma.subcategory.create({
-            data: { name: subcategoryName, categoryId: category.id }
-          });
-          info(`[CSV IMPORT] Created new subcategory: ${subcategoryName}`);
-        }
-
-        // [7] Create item
-        await prisma.item.create({
-          data: {
-            name,
-            sku,
-            price,
-            cost,
-            quantity,
-            unit,
-            categoryId: category.id,
-            subcategoryId: subcategory.id,
-            isActive: true,
-            createdById: (req as any).user.userId
-          }
-        });
-
-        createdCount++;
+      // ! [ERROR] Missing required fields: name, SKU, price, category, subcategory
+      if (!name || !sku || isNaN(price) || !categoryName || !subcategoryName) {
+        info(`[CSV IMPORT] Skipping row ${i + 1}: missing required fields`);
+        continue;
       }
 
-      // [8] Delete uploaded file
-      fs.unlinkSync(req.file.path);
-      info(`[CSV IMPORT] Deleted uploaded file`);
+      // [4] Check if item SKU already exists
+      const existing = await prisma.item.findUnique({ where: { sku } });
+      if (existing) {
+        info(`[CSV IMPORT] Skipping row ${i + 1}: SKU ${sku} already exists`);
+        continue;
+      }
 
-      info(`[INFO] Imported ${createdCount} items from CSV`);
-      res.json(successResponse(`Successfully imported ${createdCount} items`, { createdCount }));
-    } catch (err: unknown) {
-      let errorMessage = "Error importing items";
-      if (err instanceof Error) errorMessage = err.message;
-      error(`[CSV IMPORT ERROR] ${errorMessage}`);
-      res.status(500).json(errorResponse(errorMessage));
-      next(err);
+      // [5] Fetch category
+      let category = await prisma.category.findUnique({ where: { name: categoryName } });
+      if (!category) {
+        category = await prisma.category.create({ data: { name: categoryName } });
+        info(`[CSV IMPORT] Created new category: ${categoryName}`);
+      }
+
+      // [6] Fetch subcategory
+      let subcategory = await prisma.subcategory.findUnique({
+        where: { name_categoryId: { name: subcategoryName, categoryId: category.id } }
+      });
+      
+      // [7] Create subcategory if non-existing
+      if (!subcategory) {
+        subcategory = await prisma.subcategory.create({
+          data: { name: subcategoryName, categoryId: category.id }
+        });
+        info(`[CSV IMPORT] Created new subcategory: ${subcategoryName}`);
+      }
+
+      // [7] Create item
+      await prisma.item.create({
+        data: {
+          name,
+          sku,
+          price,
+          cost,
+          quantity,
+          unit,
+          categoryId: category.id,
+          subcategoryId: subcategory.id,
+          isActive: true,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          createdById: (req as any).user.userId
+        }
+      });
+
+      createdCount++;
     }
+
+    // [8] Delete uploaded file
+    fs.unlinkSync(req.file.path);
+    info(`[CSV IMPORT] Deleted uploaded file`);
+
+    // * [SUCCESS] Items imported
+    info(`[INFO] Imported ${createdCount} items from CSV`);
+    res.json(successResponse(`Successfully imported ${createdCount} items`, { createdCount }));
+  } catch (err: unknown) {
+    let errorMessage = "Error importing items";
+    if (err instanceof Error) errorMessage = err.message;
+    error(`[CSV IMPORT ERROR] ${errorMessage}`);
+    res.status(500).json(errorResponse(errorMessage));
+    next(err);
   }
-);
+});
 
 // * [GET] Get All Items
 // ? /api/items/
-router.get('/', verifyAdminOrCashier, async (req: Request, res: Response, next: NextFunction) => {
-    try {
-        const { search, category, isActive } = req.query;
+router.get('/', verifyRole(['ADMIN', 'CASHIER']), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { search, category, isActive } = req.query;
 
-        const filters: any = {};
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const filters: any = {};
 
-        // Search by name, sku, or barcode
-        if (search) {
-        filters.OR = [
-            { name: { contains: String(search), mode: "insensitive" } },
-            { sku:  { contains: String(search), mode: "insensitive" } },
-            { barcode: { contains: String(search), mode: "insensitive" } },
-        ];
-        }
-
-        // Filter by categoryId (not category object)
-        if (category) filters.categoryId = Number(category);
-
-        // Filter by active status
-        if (isActive !== undefined) filters.isActive = isActive === "true";
-
-        // Fetch items
-        const items = await prisma.item.findMany({
-        where: filters,
-        include: {
-            category: true,
-            subcategory: true,
-            createdBy: { select: { id: true, email: true, firstName: true, lastName: true, role: true } },
-            updatedBy: { select: { id: true, email: true, firstName: true, lastName: true, role: true } },
-        },
-        orderBy: { name: "asc" },
-        });
-
-        // * [SUCCESS] Return items
-        info(`Fetched ${items.length} items`);
-        res.json(successResponse("Items fetched successfully", items));
-    } catch (err: unknown) {
-        let errorMessage = "An unexpected error occurred while fetching items";
-        if (err instanceof Error) {
-            errorMessage = err.message;
-            error(`Error fetching items: ${errorMessage}`);
-        } else {
-            error(`Error fetching items: ${JSON.stringify(err)}`);
-        }
-        res.status(500).json(errorResponse(errorMessage));
-        next(err);
+    // [1] Search by name, sku, or barcode
+    if (search) {
+    filters.OR = [
+        { name: { contains: String(search), mode: "insensitive" } },
+        { sku:  { contains: String(search), mode: "insensitive" } },
+        { barcode: { contains: String(search), mode: "insensitive" } },
+    ];
     }
+
+    // [2] Filter by categoryId (not category object)
+    if (category) filters.categoryId = Number(category);
+
+    // [3] Filter by active status
+    if (isActive !== undefined) filters.isActive = isActive === "true";
+
+    // [4] Fetch items
+    const items = await prisma.item.findMany({
+    where: filters,
+    include: {
+        category: true,
+        subcategory: true,
+        createdBy: { select: { id: true, email: true, firstName: true, lastName: true, role: true } },
+        updatedBy: { select: { id: true, email: true, firstName: true, lastName: true, role: true } },
+    },
+    orderBy: { name: "asc" },
+    });
+
+    // * [SUCCESS] Return items
+    info(`Fetched ${items.length} items`);
+    res.json(successResponse("Items fetched successfully", items));
+  } catch (err: unknown) {
+    let errorMessage = "An unexpected error occurred while fetching items";
+    if (err instanceof Error) {
+        errorMessage = err.message;
+        error(`Error fetching items: ${errorMessage}`);
+    } else {
+        error(`Error fetching items: ${JSON.stringify(err)}`);
+    }
+    res.status(500).json(errorResponse(errorMessage));
+    next(err);
+  }
 });
 
 // * [GET] Get Single Item
 // ? /api/items/:id
-router.get('/:id', verifyAdminOrCashier, async (req: Request, res: Response, next: NextFunction) => {
-    const { id } = req.params;
-    try {
-        const item = await prisma.item.findUnique({
-            where: { id: Number(id) },
-            include: {
-                createdBy: {
-                    select: {
-                        id: true,
-                        email: true,
-                        firstName: true,
-                        lastName: true,
-                        role: true,
-                    }
-                },
-                updatedBy: {
-                    select: {
-                        id: true,
-                        email: true,
-                        firstName: true,
-                        lastName: true,
-                        role: true,
-                    }
-                },
-                inventoryLogs: true
-            }
-        });
-
-        if (!item) {
-            return res.status(404).json(errorResponse("Item not found"));
+router.get('/:id', verifyRole(['ADMIN', 'CASHIER']), async (req: Request, res: Response, next: NextFunction) => {
+  const { id } = req.params;
+  try {
+    // [1] Fetch item with specific 'id'
+    const item = await prisma.item.findUnique({
+        where: { id: Number(id) },
+        include: {
+            createdBy: {
+                select: {
+                    id: true,
+                    email: true,
+                    firstName: true,
+                    lastName: true,
+                    role: true,
+                }
+            },
+            updatedBy: {
+                select: {
+                    id: true,
+                    email: true,
+                    firstName: true,
+                    lastName: true,
+                    role: true,
+                }
+            },
+            inventoryLogs: true
         }
+    });
 
-        // * [SUCCESS] Return item
-        info(`Fetched item with id ${id}`);
-        res.json(successResponse("Item fetched successfully", item));
-    } catch (err: unknown) {
-        let errorMessage = "An unexpected error occurred while fetching item";
-        if (err instanceof Error) {
-            errorMessage = err.message;
-            error(`Error fetching item with id ${id}: ${errorMessage}`);
-        } else {
-            error(`Error fetching item with id ${id}: ${JSON.stringify(err)}`);
-        }
-        res.status(500).json(errorResponse(errorMessage));
-        next(err);
+    // ! [ERROR] Non-existing item
+    if (!item) {
+        return res.status(404).json(errorResponse("Item not found"));
     }
+
+    // * [SUCCESS] Return item
+    info(`Fetched item with id ${id}`);
+    res.json(successResponse("Item fetched successfully", item));
+  } catch (err: unknown) {
+    let errorMessage = "An unexpected error occurred while fetching item";
+    if (err instanceof Error) {
+        errorMessage = err.message;
+        error(`Error fetching item with id ${id}: ${errorMessage}`);
+    } else {
+        error(`Error fetching item with id ${id}: ${JSON.stringify(err)}`);
+    }
+    res.status(500).json(errorResponse(errorMessage));
+    next(err);
+  }
 });
 
 // * [POST] Create Item
 // ? /api/items/
-router.post('/', verifyAdmin, async (req: Request, res: Response, next: NextFunction) => {
-    const {
+router.post('/', verifyRole(['ADMIN']), async (req: Request, res: Response, next: NextFunction) => {
+  const {
+      name,
+      description = "",
+      sku = "",
+      barcode = "",
+      price = 0,
+      cost = 0,
+      quantity = 0,
+      categoryId,
+      subcategoryId,
+      unit = "",
+      reorderLevel = 0,
+      isActive = true
+  } = req.body;
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const createdById = (req as any).user?.id || 1; // fallback to 1 if missing user id
+
+  try {
+    // [1] Create item
+    const newItem = await prisma.item.create({
+      data: {
         name,
-        description = "",
-        sku = "",
-        barcode = "",
-        price = 0,
-        cost = 0,
-        quantity = 0,
+        description,
+        sku,
+        barcode,
+        price,
+        cost,
+        quantity,
         categoryId,
         subcategoryId,
-        unit = "",
-        reorderLevel = 0,
-        isActive = true
-    } = req.body;
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const createdById = (req as any).user?.id || 1; // fallback to 1 if somehow missing
-
-    try {
-        // Create item
-        const newItem = await prisma.item.create({
-            data: {
-                name,
-                description,
-                sku,
-                barcode,
-                price,
-                cost,
-                quantity,
-                categoryId,
-                subcategoryId,
-                unit,
-                reorderLevel,
-                isActive,
-                createdById,
-                updatedById: createdById, // set initially
-            },
-            include: {
-                category: true,
-                subcategory: true,
-                createdBy: {
-                    select: { id: true, email: true, firstName: true, lastName: true, role: true }
-                },
-                updatedBy: {
-                    select: { id: true, email: true, firstName: true, lastName: true, role: true }
-                }
-            }
-        });
-
-        info(`Created new item: ${name}`);
-        res.status(201).json(successResponse("Item created successfully", newItem));
-    } catch (err: unknown) {
-        let errorMessage = "An unexpected error occurred while creating item";
-        if (err instanceof Error) {
-            errorMessage = err.message;
-            error(`Error creating item ${name}: ${errorMessage}`);
-        } else {
-            error(`Error creating item ${name}: ${JSON.stringify(err)}`);
+        unit,
+        reorderLevel,
+        isActive,
+        createdById,
+        updatedById: createdById,
+      },
+      include: {
+        category: true,
+        subcategory: true,
+        createdBy: {
+          select: { id: true, email: true, firstName: true, lastName: true, role: true }
+        },
+        updatedBy: {
+          select: { id: true, email: true, firstName: true, lastName: true, role: true }
         }
-        res.status(500).json(errorResponse(errorMessage));
-        next(err);
+      }
+    });
+
+    // * [SUCCESS] Item created
+    info(`Created new item: ${name}`);
+    res.status(201).json(successResponse("Item created successfully", newItem));
+  } catch (err: unknown) {
+    let errorMessage = "An unexpected error occurred while creating item";
+    if (err instanceof Error) {
+      errorMessage = err.message;
+      error(`Error creating item ${name}: ${errorMessage}`);
+    } else {
+      error(`Error creating item ${name}: ${JSON.stringify(err)}`);
     }
-});
-
-// * [POST] Auto-Create Items
-// ? /api/items/auto-create
-router.post('/auto-create', verifyAdmin, async (req: Request, res: Response, next: NextFunction) => {
-    try {
-        // [1] List of all items to auto-create
-        const itemsToCreate = [
-            { name: "Ham Sandwich", sku: "FOO-DES-HSW", price: 129.00, cost: 62.80, quantity: 0, category: "Food", subcategory: "Desserts", unit: "1 serv." },
-            { name: "Spaghetti w/ Garlic Bread", sku: "FOO-DES-SGB", price: 129.00, cost: 63.20, quantity: 0, category: "Food", subcategory: "Desserts", unit: "1 serv." },
-            { name: "Tiramisu", sku: "FOO-DES-TRM", price: 129.00, cost: 70.40, quantity: 0, category: "Food", subcategory: "Desserts", unit: "1 serv." },
-            { name: "Waffle w/ Toppings", sku: "FOO-DES-WWT", price: 69.00, cost: 34.60, quantity: 0, category: "Food", subcategory: "Desserts", unit: "1 serv." },
-            { name: "Chicken Pop w/ Fries", sku: "FOO-DES-CPF", price: 229.00, cost: 82.30, quantity: 0, category: "Food", subcategory: "Desserts", unit: "1 serv." },
-            { name: "Chicken Alfredo w/ Garlic Bread", sku: "FOO-DES-CAG", price: 159.00, cost: 85.38, quantity: 0, category: "Food", subcategory: "Desserts", unit: "1 serv." },
-            { name: "Chicken Skin", sku: "FOO-APP-CKS", price: 229.00, cost: 114.50, quantity: 0, category: "Food", subcategory: "Appetizers", unit: "1 serv." },
-            { name: "Street Food Platter", sku: "FOO-APP-SFP", price: 129.00, cost: 64.50, quantity: 0, category: "Food", subcategory: "Appetizers", unit: "1 serv." },
-            { name: "Nachos", sku: "FOO-APP-NCH", price: 229.00, cost: 114.50, quantity: 0, category: "Food", subcategory: "Appetizers", unit: "1 serv." },
-            { name: "Cheese Sticks", sku: "FOO-APP-CST", price: 129.00, cost: 64.50, quantity: 0, category: "Food", subcategory: "Appetizers", unit: "1 serv." },
-            { name: "Lumpia Shanghai", sku: "FOO-APP-LSH", price: 129.00, cost: 64.50, quantity: 0, category: "Food", subcategory: "Appetizers", unit: "1 serv." },
-            { name: "French Fries", sku: "FOO-APP-FFR", price: 129.00, cost: 64.50, quantity: 0, category: "Food", subcategory: "Appetizers", unit: "1 serv." },
-            { name: "Cheesy Fries", sku: "FOO-APP-CSF", price: 139.00, cost: 69.50, quantity: 0, category: "Food", subcategory: "Appetizers", unit: "1 serv." },
-            { name: "Sour Cream Fries", sku: "FOO-APP-SCF", price: 139.00, cost: 69.50, quantity: 0, category: "Food", subcategory: "Appetizers", unit: "1 serv." },
-            { name: "BBQ Fries", sku: "FOO-APP-BBF", price: 139.00, cost: 69.50, quantity: 0, category: "Food", subcategory: "Appetizers", unit: "1 serv." },
-            { name: "Mojos", sku: "FOO-APP-MOJ", price: 129.00, cost: 64.50, quantity: 0, category: "Food", subcategory: "Appetizers", unit: "1 serv." },
-            { name: "Cheesy Mojos", sku: "FOO-APP-CMJ", price: 139.00, cost: 69.50, quantity: 0, category: "Food", subcategory: "Appetizers", unit: "1 serv." },
-            { name: "Sour Cream Mojos", sku: "FOO-APP-SMJ", price: 139.00, cost: 69.50, quantity: 0, category: "Food", subcategory: "Appetizers", unit: "1 serv." },
-            { name: "BBQ Mojos", sku: "FOO-APP-BMJ", price: 139.00, cost: 69.50, quantity: 0, category: "Food", subcategory: "Appetizers", unit: "1 serv." },
-            { name: "Hot Americano", sku: "DRK-HCF-HAM", price: 99.00, cost: 49.50, quantity: 0, category: "Drinks", subcategory: "Hot Coffee", unit: "8 oz." },
-            { name: "Hot Latte", sku: "DRK-HCF-HLT", price: 119.00, cost: 59.50, quantity: 0, category: "Drinks", subcategory: "Hot Coffee", unit: "8 oz." },
-            { name: "Hot Vanilla Latte", sku: "DRK-HCF-HVL", price: 129.00, cost: 64.50, quantity: 0, category: "Drinks", subcategory: "Hot Coffee", unit: "8 oz." },
-            { name: "Hot Caramel Latte", sku: "DRK-HCF-HCL", price: 129.00, cost: 64.50, quantity: 0, category: "Drinks", subcategory: "Hot Coffee", unit: "8 oz." },
-            { name: "Hot Mocha", sku: "DRK-HCF-HMC", price: 129.00, cost: 64.50, quantity: 0, category: "Drinks", subcategory: "Hot Coffee", unit: "8 oz." },
-            { name: "Hot Chocolate", sku: "DRK-HCF-HCH", price: 109.00, cost: 54.50, quantity: 0, category: "Drinks", subcategory: "Hot Coffee", unit: "8 oz." },
-            { name: "Hot Spanish Latte", sku: "DRK-HCF-HSL", price: 129.00, cost: 64.50, quantity: 0, category: "Drinks", subcategory: "Hot Coffee", unit: "12 oz." },
-            { name: "Iced Americano", sku: "DRK-CCF-IAM", price: 109.00, cost: 54.50, quantity: 0, category: "Drinks", subcategory: "Cold Coffee", unit: "16 oz." },
-            { name: "Iced Latte", sku: "DRK-CCF-ILA", price: 129.00, cost: 64.50, quantity: 0, category: "Drinks", subcategory: "Cold Coffee", unit: "16 oz." },
-            { name: "Iced Caramel Latte", sku: "DRK-CCF-ICL", price: 149.00, cost: 74.50, quantity: 0, category: "Drinks", subcategory: "Cold Coffee", unit: "16 oz." },
-            { name: "Iced Vanilla Latte", sku: "DRK-CCF-IVL", price: 149.00, cost: 74.50, quantity: 0, category: "Drinks", subcategory: "Cold Coffee", unit: "16 oz." },
-            { name: "Iced Mocha", sku: "DRK-CCF-IMC", price: 149.00, cost: 74.50, quantity: 0, category: "Drinks", subcategory: "Cold Coffee", unit: "16 oz." },
-            { name: "Iced Spanish Latte", sku: "DRK-CCF-ISL", price: 139.00, cost: 69.50, quantity: 0, category: "Drinks", subcategory: "Cold Coffee", unit: "16 oz." },
-            { name: "Hazelnut Frappe", sku: "DRK-FRP-HZF", price: 169.00, cost: 84.50, quantity: 0, category: "Drinks", subcategory: "Frappe", unit: "16 oz." },
-            { name: "Butterscotch Frappe", sku: "DRK-FRP-BSF", price: 149.00, cost: 74.50, quantity: 0, category: "Drinks", subcategory: "Frappe", unit: "16 oz." },
-            { name: "Vanilla Frappe", sku: "DRK-FRP-VNF", price: 149.00, cost: 74.50, quantity: 0, category: "Drinks", subcategory: "Frappe", unit: "16 oz." },
-            { name: "Mocha Frappe", sku: "DRK-FRP-MCF", price: 119.00, cost: 59.50, quantity: 0, category: "Drinks", subcategory: "Frappe", unit: "16 oz." },
-            { name: "Biscoff Frappe", sku: "DRK-FRP-BCF", price: 189.00, cost: 94.50, quantity: 0, category: "Drinks", subcategory: "Frappe", unit: "16 oz." },
-            { name: "Strawberry Frappe", sku: "DRK-FRP-SBF", price: 129.00, cost: 64.50, quantity: 0, category: "Drinks", subcategory: "Frappe", unit: "16 oz." },
-            { name: "Cookies and Cream Frappe", sku: "DRK-FRP-CCF", price: 159.00, cost: 79.50, quantity: 0, category: "Drinks", subcategory: "Frappe", unit: "16 oz." },
-            { name: "Matcha Frappe", sku: "DRK-FRP-MTF", price: 129.00, cost: 64.50, quantity: 0, category: "Drinks", subcategory: "Frappe", unit: "16 oz." },
-            { name: "Coffee Cooler", sku: "DRK-COO-CCO", price: 149.00, cost: 74.50, quantity: 0, category: "Drinks", subcategory: "Cooler", unit: "16 oz." },
-            { name: "Mocha Cooler", sku: "DRK-COO-MCO", price: 159.00, cost: 79.50, quantity: 0, category: "Drinks", subcategory: "Cooler", unit: "16 oz." },
-            { name: "Snickers Mocha Cooler", sku: "DRK-COO-SMC", price: 179.00, cost: 89.50, quantity: 0, category: "Drinks", subcategory: "Cooler", unit: "16 oz." },
-            { name: "Camper Mocha Cooler", sku: "DRK-COO-CMC", price: 179.00, cost: 89.50, quantity: 0, category: "Drinks", subcategory: "Cooler", unit: "16 oz." },
-            { name: "Caramel Cooler", sku: "DRK-COO-CRC", price: 159.00, cost: 79.50, quantity: 0, category: "Drinks", subcategory: "Cooler", unit: "16 oz." },
-            { name: "Vanilla Cooler", sku: "DRK-COO-VCO", price: 159.00, cost: 79.50, quantity: 0, category: "Drinks", subcategory: "Cooler", unit: "16 oz." },
-            { name: "White Rabbit Cooler", sku: "DRK-COO-WRC", price: 149.00, cost: 74.50, quantity: 0, category: "Drinks", subcategory: "Cooler", unit: "16 oz." },
-            { name: "Cucumber Shake", sku: "DRK-SHK-CSH", price: 119.00, cost: 59.50, quantity: 0, category: "Drinks", subcategory: "Shakes", unit: "16 oz." },
-            { name: "Mango Shake", sku: "DRK-SHK-MSH", price: 119.00, cost: 59.50, quantity: 0, category: "Drinks", subcategory: "Shakes", unit: "16 oz." },
-            { name: "Mango Graham Shake", sku: "DRK-SHK-MGS", price: 119.00, cost: 59.50, quantity: 0, category: "Drinks", subcategory: "Shakes", unit: "16 oz." },
-            { name: "Strawberry Shake", sku: "DRK-SHK-SSH", price: 119.00, cost: 59.50, quantity: 0, category: "Drinks", subcategory: "Shakes", unit: "16 oz." },
-            { name: "Cookies and Cream Shake", sku: "DRK-SHK-CCS", price: 119.00, cost: 59.50, quantity: 0, category: "Drinks", subcategory: "Shakes", unit: "16 oz." },
-            { name: "Milo Lava", sku: "DRK-MLK-MLL", price: 159.00, cost: 81.00, quantity: 0, category: "Drinks", subcategory: "Milk", unit: "16 oz." },
-            { name: "Traditional Coffee Milk", sku: "DRK-MLK-TCM", price: 149.00, cost: 76.00, quantity: 0, category: "Drinks", subcategory: "Milk", unit: "16 oz." },
-            { name: "Iced Cookies and Cream Cocoa Milk", sku: "DRK-MLK-ICM", price: 139.00, cost: 71.00, quantity: 0, category: "Drinks", subcategory: "Milk", unit: "16 oz." },
-            { name: "Iced Oreo Cocoa Milk", sku: "DRK-MLK-IOM", price: 139.00, cost: 71.00, quantity: 0, category: "Drinks", subcategory: "Milk", unit: "16 oz." },
-            { name: "Royal Sakto", sku: "DRK-SFD-RSA", price: 29.00, cost: 14.50, quantity: 0, category: "Drinks", subcategory: "Soft Drinks", unit: "200 mL" },
-            { name: "Sprite Sakto", sku: "DRK-SFD-SSA", price: 29.00, cost: 14.50, quantity: 0, category: "Drinks", subcategory: "Soft Drinks", unit: "200 mL" },
-            { name: "Coke Sakto", sku: "DRK-SFD-CSA", price: 29.00, cost: 14.50, quantity: 0, category: "Drinks", subcategory: "Soft Drinks", unit: "200 mL" },
-            { name: "Bottled Water", sku: "DRK-OTH-BW5", price: 34.00, cost: 17.00, quantity: 0, category: "Drinks", subcategory: "Others", unit: "500 mL" },
-            { name: "Bottled Water", sku: "DRK-OTH-BW1", price: 29.00, cost: 14.50, quantity: 0, category: "Drinks", subcategory: "Others", unit: "1 L" },
-        ];
-
-        // [2] Insert all items into DB
-        const createdItems = await prisma.item.createMany({
-            data: itemsToCreate,
-            skipDuplicates: true,
-        });
-
-        info(`Auto-created ${itemsToCreate.length} items`);
-        res.status(201).json(successResponse("Items auto-created successfully", { count: createdItems.count }));
-    } catch (err: unknown) {
-        let errorMessage = "An unexpected error occurred while auto-creating items";
-        if (err instanceof Error) {
-            errorMessage = err.message;
-            error(`Error auto-creating items: ${errorMessage}`);
-        } else {
-            error(`Error auto-creating items: ${JSON.stringify(err)}`);
-        }
-        res.status(500).json(errorResponse(errorMessage));
-        next(err);
-    }
+    res.status(500).json(errorResponse(errorMessage));
+    next(err);
+  }
 });
 
 // * [PUT] Update Item
 // ? /api/items/:id
-router.put('/:id', verifyAdmin, async (req: Request, res: Response, next: NextFunction) => {
-    const { id } = req.params;
-    const updateData = req.body;
-    try {
-        const updatedItem = await prisma.item.update({
-            where: { id: Number(id) },
-            data: updateData
-        });
+router.put('/:id', verifyRole(['ADMIN']), async (req: Request, res: Response, next: NextFunction) => {
+  const { id } = req.params;
+  const updateData = req.body;
+  try {
+    // [1] Update item
+    const updatedItem = await prisma.item.update({
+      where: { id: Number(id) },
+      data: updateData
+    });
 
-        info(`Updated item with id ${id}`);
-        res.json(successResponse("Item updated successfully", updatedItem));
-    } catch (err: unknown) {
-        let errorMessage = "An unexpected error occurred while updating item";
-        if (err instanceof Error) {
-            errorMessage = err.message;
-            error(`Error updating item with id ${id}: ${errorMessage}`);
-        } else {
-            error(`Error updating item with id ${id}: ${JSON.stringify(err)}`);
-        }
-        res.status(500).json(errorResponse(errorMessage));
-        next(err);
+    // * [SUCCESS] Item updated
+    info(`Updated item with id ${id}`);
+    res.json(successResponse("Item updated successfully", updatedItem));
+  } catch (err: unknown) {
+    let errorMessage = "An unexpected error occurred while updating item";
+    if (err instanceof Error) {
+      errorMessage = err.message;
+      error(`Error updating item with id ${id}: ${errorMessage}`);
+    } else {
+      error(`Error updating item with id ${id}: ${JSON.stringify(err)}`);
     }
+    res.status(500).json(errorResponse(errorMessage));
+    next(err);
+  }
 });
 
 // * [DELETE] Delete All Items (Hard)
 // ? /api/items/hard-delete-all
-router.delete('/hard-delete-all', verifyAdmin, async (req: Request, res: Response, next: NextFunction) => {
-    try {
-        // [1] Delete all items
-        const deletedItems = await prisma.item.deleteMany({});
+router.delete('/hard-delete-all', verifyRole(['ADMIN']), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    // [1] Delete all items
+    const deletedItems = await prisma.item.deleteMany({});
 
-        info(`Hard-deleted all items (${deletedItems.count} items)`);
-        res.json(successResponse("All items permanently deleted successfully", { count: deletedItems.count }));
-    } catch (err: unknown) {
-        // ! [ERROR] Return error response
-        let errorMessage = "An unexpected error occurred while hard-deleting all items";
-        if (err instanceof Error) {
-            errorMessage = err.message;
-            error(`Error hard-deleting all items: ${errorMessage}`);
-        } else {
-            error(`Error hard-deleting all items: ${JSON.stringify(err)}`);
-        }
-        res.status(500).json(errorResponse(errorMessage));
-
-        // ! [ERROR] Forward to global error handler
-        next(err);
+    // * [SUCCESS] Items hard-deleted
+    info(`Hard-deleted all items (${deletedItems.count} items)`);
+    res.json(successResponse("All items permanently deleted successfully", { count: deletedItems.count }));
+  } catch (err: unknown) {
+    // ! [ERROR] Return error response
+    let errorMessage = "An unexpected error occurred while hard-deleting all items";
+    if (err instanceof Error) {
+      errorMessage = err.message;
+      error(`Error hard-deleting all items: ${errorMessage}`);
+    } else {
+      error(`Error hard-deleting all items: ${JSON.stringify(err)}`);
     }
+    res.status(500).json(errorResponse(errorMessage));
+
+    // ! [ERROR] Forward to global error handler
+    next(err);
+  }
 });
 
 // * [DELETE] Delete Item (Hard)
 // ? /api/items/:id/hard
-router.delete('/:id/hard', verifyAdmin, async (req: Request, res: Response, next: NextFunction) => {
-    const { id } = req.params;
+router.delete('/:id/hard', verifyRole(['ADMIN']), async (req: Request, res: Response, next: NextFunction) => {
+  const { id } = req.params;
 
-    try {
-        const deletedItem = await prisma.item.delete({
-            where: { id: Number(id) }
-        });
+  try {
+    // [1] Delete item
+    const deletedItem = await prisma.item.delete({
+      where: { id: Number(id) }
+    });
 
-        info(`Hard-deleted item with id ${id}`);
-        res.json(successResponse("Item permanently deleted successfully", deletedItem));
-    } catch (err: unknown) {
-        // ! [ERROR] Return error response
-        let errorMessage = "An unexpected error occurred while hard-deleting item";
-        if (err instanceof Error) {
-            errorMessage = err.message;
-            error(`Error hard-deleting item with id ${id}: ${errorMessage}`);
-        } else {
-            error(`Error hard-deleting item with id ${id}: ${JSON.stringify(err)}`);
-        }
-        res.status(500).json(errorResponse(errorMessage));
-
-        // ! [ERROR] Forward to global error handler
-        next(err);
+    // * [SUCCESS] Item hard-deleted
+    info(`Hard-deleted item with id ${id}`);
+    res.json(successResponse("Item permanently deleted successfully", deletedItem));
+  } catch (err: unknown) {
+    // ! [ERROR] Return error response
+    let errorMessage = "An unexpected error occurred while hard-deleting item";
+    if (err instanceof Error) {
+      errorMessage = err.message;
+      error(`Error hard-deleting item with id ${id}: ${errorMessage}`);
+    } else {
+      error(`Error hard-deleting item with id ${id}: ${JSON.stringify(err)}`);
     }
+    res.status(500).json(errorResponse(errorMessage));
+
+    // ! [ERROR] Forward to global error handler
+    next(err);
+  }
 });
 
-// * [DELETE] Delete Item (Soft Delete => isActive)
+// * [DELETE] Delete Item (Soft Delete)
 // ? /api/items/:id
-router.delete('/:id', verifyAdmin, async (req: Request, res: Response, next: NextFunction) => {
-    const { id } = req.params;
-    
-    if (!id || isNaN(Number(id))) {
-        return res.status(400).json(errorResponse("Invalid item id"));
-    }
+router.delete('/:id', verifyRole(['ADMIN']), async (req: Request, res: Response, next: NextFunction) => {
+  const { id } = req.params;
+  
+  // ! [ERROR] Invalid item id
+  if (!id || isNaN(Number(id))) {
+    return res.status(400).json(errorResponse("Invalid item id"));
+  }
 
-    try {
-        const deletedItem = await prisma.item.update({
-            where: { id: Number(id) },
-            data: { isActive: false }
-        });
+  try {
+    // [1] Soft-delete item
+    const deletedItem = await prisma.item.update({
+      where: { id: Number(id) },
+      data: { isActive: false }
+    });
 
-        info(`Soft-deleted item with id ${id}`);
-        res.json(successResponse("Item deleted successfully", deletedItem));
-    } catch (err: unknown) {
-        let errorMessage = "An unexpected error occurred while deleting item";
-        if (err instanceof Error) {
-            errorMessage = err.message;
-            error(`Error deleting item with id ${id}: ${errorMessage}`);
-        } else {
-            error(`Error deleting item with id ${id}: ${JSON.stringify(err)}`);
-        }
-        res.status(500).json(errorResponse(errorMessage));
-        next(err);
+    // * [SUCCESS] Item soft-deleted
+    info(`Soft-deleted item with id ${id}`);
+    res.json(successResponse("Item deleted successfully", deletedItem));
+  } catch (err: unknown) {
+    let errorMessage = "An unexpected error occurred while deleting item";
+    if (err instanceof Error) {
+      errorMessage = err.message;
+      error(`Error deleting item with id ${id}: ${errorMessage}`);
+    } else {
+      error(`Error deleting item with id ${id}: ${JSON.stringify(err)}`);
     }
+    res.status(500).json(errorResponse(errorMessage));
+    next(err);
+  }
 });
 
 export const itemRoutes = router;

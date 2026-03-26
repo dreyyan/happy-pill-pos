@@ -617,25 +617,25 @@ const AdminCategories = () => {
           })}
         </div>
       </div>
-        {/* [SECTION] CSV Upload */}
-        <div className="w-full max-w-md bg-bg-100 border border-bg-300 rounded-lg shadow-sm p-5 space-y-4">
-          <h3 className="text-text-700 font-semibold">Auto-Create Categories (CSV)</h3>
-          <p className="text-text-500 text-sm">
-            Upload 'items-database.csv'.
-          </p>
+      {/* [SECTION] CSV Upload */}
+      <div className="w-full max-w-md bg-bg-100 border border-bg-300 rounded-lg shadow-sm p-5 space-y-4">
+        <h3 className="text-text-700 font-semibold">Auto-Create Categories (CSV)</h3>
+        <p className="text-text-500 text-sm">
+          Upload 'items-database.csv'.
+        </p>
 
-          {/* [INPUT] Upload CSV */}
-          <input
-            id="csv-upload"
-            type="file"
-            accept=".csv"
-            onChange={handleCsvChange}
-            className="w-full border border-bg-300 rounded-md p-2 text-sm"
-          />
+        {/* [INPUT] Upload CSV */}
+        <input
+          id="csv-upload"
+          type="file"
+          accept=".csv"
+          onChange={handleCsvChange}
+          className="w-full border border-bg-300 rounded-md p-2 text-sm"
+        />
 
-          {/* [PRIMARY BUTTON] Upload CSV */}
-          <PrimaryButton text={`${uploading ? "Uploading..." : "Upload CSV & Create Users"}`} onClick={handleUploadCsv} disabled={uploading} />
-        </div>
+        {/* [PRIMARY BUTTON] Upload CSV */}
+        <PrimaryButton text={`${uploading ? "Uploading..." : "Upload CSV & Create Categories"}`} onClick={handleUploadCsv} disabled={uploading} />
+      </div>
     </div>
   );
 };

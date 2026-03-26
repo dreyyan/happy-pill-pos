@@ -7,32 +7,33 @@ import { successResponse, errorResponse } from '../utils/response';
 import { error, info } from '../utils/logger';
 
 // [IMPORT] Middleware
-import { verifyAdmin, verifyAdminOrCashier } from '../middleware/authMiddleware';
+import { verifyRole } from '../middleware/authMiddleware';
 
 const router = Router();
 
-// ─────────────────────────────────────────────────────────────────────────────
 // * [GET] Get All Orders
 // ? /api/orders/
-router.get('/', verifyAdminOrCashier, async (req: Request, res: Response, next: NextFunction) => {
+router.get('/', verifyRole(['ADMIN', 'CASHIER']), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { status, customerId } = req.query;
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const filters: any = { isActive: true };
 
+    // [1] Apply optional filters
     if (status) filters.status = String(status).toUpperCase();
     if (customerId) filters.customerId = Number(customerId);
 
+    // [2] Fetch all orders
     const orders = await prisma.order.findMany({
       where: filters,
       include: {
         customer: {
           select: {
             id: true,
+            tableNumber: true,
             firstName: true,
-            lastName: true,
-            email: true,
-            phone: true,
+            pax: true,
           }
         },
         orderItems: {
@@ -51,6 +52,7 @@ router.get('/', verifyAdminOrCashier, async (req: Request, res: Response, next: 
       orderBy: { createdAt: 'desc' },
     });
 
+    // * [SUCCESS] Orders fetched
     info(`Fetched ${orders.length} orders`);
     res.json(successResponse("Orders fetched successfully", orders));
   } catch (err: unknown) {
@@ -64,20 +66,20 @@ router.get('/', verifyAdminOrCashier, async (req: Request, res: Response, next: 
 
 // * [GET] Get Single Order
 // ? /api/orders/:id
-router.get('/:id', verifyAdminOrCashier, async (req: Request, res: Response, next: NextFunction) => {
+router.get('/:id', verifyRole(['ADMIN', 'CASHIER']), async (req: Request, res: Response, next: NextFunction) => {
   const { id } = req.params;
 
   try {
+    // [1] Fetch order with specific 'id'
     const order = await prisma.order.findUnique({
       where: { id: Number(id) },
       include: {
         customer: {
           select: {
             id: true,
+            tableNumber: true,
             firstName: true,
-            lastName: true,
-            email: true,
-            phone: true,
+            pax: true,
           }
         },
         orderItems: {
@@ -95,10 +97,12 @@ router.get('/:id', verifyAdminOrCashier, async (req: Request, res: Response, nex
       },
     });
 
+    // ! [ERROR] Non-existing order
     if (!order) {
       return res.status(404).json(errorResponse("Order not found"));
     }
 
+    // * [SUCCESS] Order fetched
     info(`Fetched order with id ${id}`);
     res.json(successResponse("Order fetched successfully", order));
   } catch (err: unknown) {
@@ -110,31 +114,58 @@ router.get('/:id', verifyAdminOrCashier, async (req: Request, res: Response, nex
   }
 });
 
-// * [POST] Create Order
-// ? /api/orders/
-router.post('/', verifyAdmin, async (req: Request, res: Response, next: NextFunction) => {
-  const { customerId, status = "PENDING", orderItems } = req.body;
+// * [POST] Create Order - Supports tableNumber + firstName + pax
+router.post('/', verifyRole(['ADMIN', 'CASHIER']), async (req: Request, res: Response, next: NextFunction) => {
+  const { tableNumber, firstName, pax, status = "PENDING", orderItems } = req.body;
 
-  if (!customerId || !Array.isArray(orderItems) || orderItems.length === 0) {
-    return res.status(400).json(errorResponse("customerId and at least one order item are required"));
+  // ! [ERROR] Missing required fields: table number, first name
+  if (!tableNumber || !firstName) {
+    return res.status(400).json(errorResponse("tableNumber and firstName are required"));
+  }
+
+  // ! [ERROR] No item orders
+  if (!Array.isArray(orderItems) || orderItems.length === 0) {
+    return res.status(400).json(errorResponse("At least one order item is required"));
   }
 
   try {
     const result = await prisma.$transaction(async (tx) => {
+      // [1] Fetch customer if existing
+      let customer = await tx.customer.findUnique({
+        where: { tableNumber: Number(tableNumber) },
+      });
+
+      // [2] Create customer if not-existing
+      if (!customer || !customer.isActive) {
+        customer = await tx.customer.create({
+          data: {
+            tableNumber: Number(tableNumber),
+            firstName: firstName.trim(),
+            pax: pax ? Number(pax) : null,
+            isActive: true,
+          },
+        });
+      }
+
+      // [3] Calculate total and prepare order items
       let totalAmount = 0;
       const processedOrderItems = [];
 
+      // [4] Find order items
       for (const oi of orderItems) {
         const item = await tx.item.findUnique({
           where: { id: oi.itemId },
-          select: { id: true, name: true, price: true }
+          select: { id: true, name: true, price: true },
         });
 
+        // ! [ERROR] Non-existing item
         if (!item) throw new Error(`Item with id ${oi.itemId} not found`);
 
+        // Compute dynamic totals
         const subtotal = item.price * oi.quantity;
         totalAmount += subtotal;
 
+        // * [SUCCESS] Add order items
         processedOrderItems.push({
           itemId: oi.itemId,
           quantity: oi.quantity,
@@ -144,28 +175,32 @@ router.post('/', verifyAdmin, async (req: Request, res: Response, next: NextFunc
         });
       }
 
+      // [5] Create new order
       const newOrder = await tx.order.create({
         data: {
-          customerId: Number(customerId),
+          customerId: customer.id,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           status: status.toUpperCase() as any,
           totalAmount,
           orderItems: {
             create: processedOrderItems,
           },
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           createdById: (req as any).user?.userId || (req as any).user?.id,
         },
         include: {
           customer: true,
           orderItems: {
-            include: { item: true }
-          }
-        }
+            include: { item: true },
+          },
+        },
       });
 
       return newOrder;
     });
 
-    info(`Created new order #${result.id}`);
+    // * [SUCCESS] Order created
+    info(`Created new order #${result.id} for table ${tableNumber}`);
     res.status(201).json(successResponse("Order created successfully", result));
   } catch (err: unknown) {
     let errorMessage = "Failed to create order";
@@ -178,31 +213,128 @@ router.post('/', verifyAdmin, async (req: Request, res: Response, next: NextFunc
 
 // * [PUT] Update Order Status
 // ? /api/orders/:id
-router.put('/:id', verifyAdmin, async (req: Request, res: Response, next: NextFunction) => {
+// * [PUT] Update Order Status → When COMPLETED, create Transaction + update SalesReport
+router.put('/:id', verifyRole(['ADMIN', 'CASHIER']), async (req: Request, res: Response, next: NextFunction) => {
   const { id } = req.params;
   const { status } = req.body;
 
+  // ! [ERROR] Missing status
   if (!status) {
     return res.status(400).json(errorResponse("status is required"));
   }
 
+  const newStatus = status.toUpperCase();
+
   try {
-    const updatedOrder = await prisma.order.update({
-      where: { id: Number(id) },
-      data: { status: status.toUpperCase() as any },
-      include: {
-        customer: true,
-        orderItems: {
-          include: { item: true }
+    // [1] Update order status
+    const result = await prisma.$transaction(async (tx) => {
+      // [2] Fetch order with items
+      const order = await tx.order.findUnique({
+        where: { id: Number(id) },
+        include: {
+          orderItems: {
+            include: { item: true }
+          }
         }
+      });
+
+      // ! [ERROR] Non-existing order
+      if (!order) throw new Error("Order not found");
+
+      // ! [ERROR] Inactive order
+      if (!order.isActive) throw new Error("Order is already deleted");
+
+      // [3] Update order status
+      const updatedOrder = await tx.order.update({
+        where: { id: Number(id) },
+        data: { status: newStatus },
+        include: {
+          customer: true,
+          orderItems: { include: { item: true } }
+        }
+      });
+
+      // [4] If order is marked 'COMPLETED', create transaction computation, reduce inventory, and create sales report
+      if (newStatus === "COMPLETED" && order.status !== "COMPLETED") {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const userId = (req as any).user?.userId || (req as any).user?.id;
+
+        // [4.1] Get or create cashier record
+        let cashier = await tx.cashier.findUnique({ where: { userId } });
+        if (!cashier) {
+          cashier = await tx.cashier.create({ data: { userId } });
+        }
+
+        const totalAmount = order.totalAmount;
+
+        // [4.2] Create Transaction
+        const transaction = await tx.transaction.create({
+          data: {
+            receiptNumber: `ORD-${order.id}-${Date.now()}`,
+            cashierId: cashier.id,
+            totalAmount,
+            cashReceived: totalAmount,
+            changeGiven: 0,
+            paymentMethod: "CASH",
+            status: "COMPLETED",
+          }
+        });
+
+        // [4.3] Create Transaction Items + reduce stock
+        for (const oi of order.orderItems) {
+          await tx.transactionItem.create({
+            data: {
+              transactionId: transaction.id,
+              itemId: oi.itemId,
+              itemName: oi.itemName,
+              priceAtSale: oi.priceAtOrder,
+              costAtSale: oi.item.cost || 0,
+              quantity: oi.quantity,
+              subtotal: oi.subtotal,
+            }
+          });
+
+          // [4.4] Reduce inventory
+          await tx.item.update({
+            where: { id: oi.itemId },
+            data: { quantity: { decrement: oi.quantity } }
+          });
+        }
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        // [4.5] Compute profit
+        const profit = order.orderItems.reduce((sum, oi) => {
+          return sum + (oi.priceAtOrder - (oi.item.cost || 0)) * oi.quantity;
+        }, 0);
+
+        // [4.6] Create sales report
+        await tx.salesReport.upsert({
+          where: { date: today },
+          update: {
+            totalSales: { increment: totalAmount },
+            totalProfit: { increment: profit },
+            totalTransactions: { increment: 1 }
+          },
+          create: {
+            date: today,
+            totalSales: totalAmount,
+            totalProfit: profit,
+            totalTransactions: 1
+          }
+        });
       }
+
+      return updatedOrder;
     });
 
-    info(`Updated order ${id} status to ${status}`);
-    res.json(successResponse("Order updated successfully", updatedOrder));
+    // * [SUCCESS] Order updated
+    info(`Updated order ${id} to ${newStatus}`);
+    res.json(successResponse("Order updated successfully", result));
+
   } catch (err: unknown) {
-    let errorMessage = "An unexpected error occurred while updating order";
-    if (err instanceof Error) errorMessage = err.message;
+    const errorMessage = err instanceof Error ? err.message : "Failed to update order";
     error(`Error updating order ${id}: ${errorMessage}`);
     res.status(500).json(errorResponse(errorMessage));
     next(err);
@@ -211,14 +343,16 @@ router.put('/:id', verifyAdmin, async (req: Request, res: Response, next: NextFu
 
 // * [DELETE] Soft Delete Order
 // ? /api/orders/:id
-router.delete('/:id', verifyAdmin, async (req: Request, res: Response, next: NextFunction) => {
+router.delete('/:id', verifyRole(['ADMIN', 'CASHIER']), async (req: Request, res: Response, next: NextFunction) => {
   const { id } = req.params;
 
+  // ! [ERROR] Invalid order id
   if (!id || isNaN(Number(id))) {
     return res.status(400).json(errorResponse("Invalid order id"));
   }
 
   try {
+    // Soft-delete order
     const deletedOrder = await prisma.order.update({
       where: { id: Number(id) },
       data: { isActive: false },
@@ -228,6 +362,7 @@ router.delete('/:id', verifyAdmin, async (req: Request, res: Response, next: Nex
       }
     });
 
+    // * [SUCCESS] Order soft-deleted
     info(`Soft-deleted order with id ${id}`);
     res.json(successResponse("Order soft deleted successfully", deletedOrder));
   } catch (err: unknown) {

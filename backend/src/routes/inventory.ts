@@ -7,13 +7,13 @@ import { successResponse, errorResponse } from '../utils/response';
 import { error, info } from '../utils/logger';
 
 // [IMPORT] Middleware
-import { verifyAdmin, verifyAdminOrCashier } from '../middleware/authMiddleware';
+import { verifyRole } from '../middleware/authMiddleware';
 
 const router = Router();
 
 // * [GET] Get All Inventory Logs
 // ? /api/inventory/
-router.get('/', verifyAdminOrCashier, async (req: Request, res: Response, next: NextFunction) => {
+router.get('/', verifyRole(['ADMIN']), async (req: Request, res: Response, next: NextFunction) => {
     try {
         const { itemId, type, createdById } = req.query;
 
@@ -60,9 +60,10 @@ router.get('/', verifyAdminOrCashier, async (req: Request, res: Response, next: 
 
 // * [GET] Get Single Inventory Log
 // ? /api/inventory/:id
-router.get('/:id', verifyAdminOrCashier, async (req: Request, res: Response, next: NextFunction) => {
+router.get('/:id', verifyRole(['ADMIN', 'CASHIER']), async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
     try {
+      // [1] Fetch inventory log with specific 'id'
         const log = await prisma.inventoryLog.findUnique({
             where: { id: Number(id) },
             include: {
@@ -99,18 +100,19 @@ router.get('/:id', verifyAdminOrCashier, async (req: Request, res: Response, nex
     }
 });
 
-// * [POST] Create Inventory Log + Update Item Quantity
+// * [POST] Create Inventory Log (Update Item Quantity)
 // ? /api/inventory/
-router.post('/', verifyAdmin, async (req: Request, res: Response, next: NextFunction) => {
+router.post('/', verifyRole(['ADMIN']), async (req: Request, res: Response, next: NextFunction) => {
   const { itemId, type, quantity, createdById } = req.body;
 
+  // ! [ERROR] Missing required fields
   if (!itemId || !type || !quantity || quantity <= 0) {
     return res.status(400).json(errorResponse("itemId, type, and quantity (>0) are required"));
   }
 
   try {
+    // [1] Create inventory log
     const result = await prisma.$transaction(async (tx) => {
-      // 1. Create the log
       const newLog = await tx.inventoryLog.create({
         data: {
           itemId: Number(itemId),
@@ -121,7 +123,7 @@ router.post('/', verifyAdmin, async (req: Request, res: Response, next: NextFunc
         include: { item: true }
       });
 
-      // 2. Update item quantity
+      // [2] Update item quantity
       const updateData = type.toUpperCase() === "STOCK_IN"
         ? { quantity: { increment: Number(quantity) } }
         : { quantity: { decrement: Number(quantity) } };
@@ -134,14 +136,14 @@ router.post('/', verifyAdmin, async (req: Request, res: Response, next: NextFunc
       return { log: newLog, item: updatedItem };
     });
 
+    // * [SUCCESS] Inventory log created
     info(`Inventory log created + item ${result.item.name} quantity updated (${type})`);
-
     res.status(201).json(successResponse("Inventory log created and stock updated", result.log));
   } catch (err: unknown) {
     let errorMessage = "Failed to create inventory log";
     if (err instanceof Error) errorMessage = err.message;
 
-    // Common error: insufficient stock for STOCK_OUT
+    // ! [ERROR] Insufficient stock for STOCK_OUT
     if (errorMessage.includes("insufficient") || errorMessage.includes("negative")) {
       return res.status(400).json(errorResponse("Not enough stock for STOCK_OUT"));
     }
@@ -152,28 +154,31 @@ router.post('/', verifyAdmin, async (req: Request, res: Response, next: NextFunc
   }
 });
 
-// * [PUT] Update Inventory Log + Adjust Item Quantity (Delta) - Prevents Negative Stock
+// * [PUT] Update Inventory Log (Adjust Item Quantity (Delta) - Prevents Negative Stock)
 // ? /api/inventory/:id
-router.put('/:id', verifyAdmin, async (req: Request, res: Response, next: NextFunction) => {
+router.put('/:id', verifyRole(['ADMIN']), async (req: Request, res: Response, next: NextFunction) => {
   const { id } = req.params;
   const { type, quantity } = req.body;
 
+  // ! [ERROR] Missing required fields
   if (!type || quantity == null || Number(quantity) <= 0) {
     return res.status(400).json(errorResponse("type and quantity (> 0) are required"));
   }
 
   try {
+    // [2] Update inventory log
     const result = await prisma.$transaction(async (tx) => {
       const logId = Number(id);
       const newType = type.toUpperCase() as "STOCK_IN" | "STOCK_OUT";
       const newQty = Number(quantity);
 
-      // 1. Get the old log
+      // [2.1] Get the old log
       const oldLog = await tx.inventoryLog.findUnique({
         where: { id: logId },
         select: { type: true, quantity: true, itemId: true }
       });
 
+      // ! [ERROR] Non-existing inventory log
       if (!oldLog) {
         throw new Error("Inventory log not found");
       }
@@ -182,37 +187,39 @@ router.put('/:id', verifyAdmin, async (req: Request, res: Response, next: NextFu
       const oldQty = oldLog.quantity;
       const itemId = oldLog.itemId;
 
-      // 2. Get current item quantity BEFORE any changes
+      // [2.2] Get current item quantity BEFORE any changes
       const currentItem = await tx.item.findUnique({
         where: { id: itemId },
         select: { quantity: true, name: true }
       });
 
+      // ! [ERROR] Non-existing item
       if (!currentItem) {
         throw new Error("Item not found");
       }
 
-      // 3. Reverse the OLD effect to simulate "undo"
+      // [2.3] Reverse the OLD effect to simulate "undo"
       let simulatedQuantity = currentItem.quantity;
 
       if (oldType === "STOCK_IN") {
-        simulatedQuantity -= oldQty;   // remove previous stock in
+        simulatedQuantity -= oldQty; // ? remove previous stock in
       } else {
-        simulatedQuantity += oldQty;   // remove previous stock out
+        simulatedQuantity += oldQty; // ? remove previous stock out
       }
 
-      // 4. Apply the NEW effect and check for negative stock
+      // [2.4] Apply the NEW effect and check for negative stock
       if (newType === "STOCK_IN") {
         simulatedQuantity += newQty;
       } else {
         simulatedQuantity -= newQty;
       }
 
+      // ! [ERROR] 'STOCK_OUT' quantity exceeds current stock
       if (simulatedQuantity < 0) {
         throw new Error(`Cannot perform STOCK_OUT of ${newQty}. Current stock after change would be negative.`);
       }
 
-      // 5. Now safely reverse the old effect in DB
+      // [2.5] Safely reverse the old effect in DB
       if (oldType === "STOCK_IN") {
         await tx.item.update({
           where: { id: itemId },
@@ -225,7 +232,7 @@ router.put('/:id', verifyAdmin, async (req: Request, res: Response, next: NextFu
         });
       }
 
-      // 6. Apply the new effect
+      // [2.6] Apply the new effect
       if (newType === "STOCK_IN") {
         await tx.item.update({
           where: { id: itemId },
@@ -238,7 +245,7 @@ router.put('/:id', verifyAdmin, async (req: Request, res: Response, next: NextFu
         });
       }
 
-      // 7. Update the log
+      // [2.7] Update the log
       const updatedLog = await tx.inventoryLog.update({
         where: { id: logId },
         data: { type: newType, quantity: newQty },
@@ -248,13 +255,14 @@ router.put('/:id', verifyAdmin, async (req: Request, res: Response, next: NextFu
       return updatedLog;
     });
 
+    // * [SUCCESS] Inventory log & stock updated
     info(`Inventory log ${id} updated and stock adjusted successfully`);
     res.json(successResponse("Inventory log updated and stock adjusted successfully", result));
   } catch (err: unknown) {
     let errorMessage = "Failed to update inventory log";
     if (err instanceof Error) errorMessage = err.message;
 
-    // Catch negative stock attempts
+    // ! [ERROR] Insufficient stock for STOCK_OUT
     if (errorMessage.includes("negative") || errorMessage.includes("Not enough stock")) {
       return res.status(400).json(errorResponse(errorMessage));
     }
@@ -265,24 +273,28 @@ router.put('/:id', verifyAdmin, async (req: Request, res: Response, next: NextFu
   }
 });
 
-// * [PATCH] Restore Inventory Log + Re-apply Stock Effect
+// * [PATCH] Restore Inventory Log (Re-apply Stock Effect)
 // ? /api/inventory/:id/restore
-router.patch('/:id/restore', verifyAdmin, async (req: Request, res: Response, next: NextFunction) => {
+router.patch('/:id/restore', verifyRole(['ADMIN']), async (req: Request, res: Response, next: NextFunction) => {
   const { id } = req.params;
 
   try {
+    // [1] Restore inventory log
     const result = await prisma.$transaction(async (tx) => {
       const logId = Number(id);
 
+      // [1.1] Fetch existing log
       const existingLog = await tx.inventoryLog.findUnique({
         where: { id: logId },
         select: { type: true, quantity: true, itemId: true, isActive: true }
       });
 
+      // ! [ERROR] Non-existing inventory log
       if (!existingLog) {
         throw new Error(`Inventory log with id ${id} not found`);
       }
 
+      // ! [ERROR] Already active inventory log
       if (existingLog.isActive) {
         throw new Error("Log is already active");
       }
@@ -290,7 +302,7 @@ router.patch('/:id/restore', verifyAdmin, async (req: Request, res: Response, ne
       const { type, quantity, itemId } = existingLog;
       const qty = Number(quantity);
 
-      // Re-apply the effect
+      // [1.2] Re-apply the effect
       if (type === "STOCK_IN") {
         await tx.item.update({
           where: { id: itemId },
@@ -303,7 +315,7 @@ router.patch('/:id/restore', verifyAdmin, async (req: Request, res: Response, ne
         });
       }
 
-      // Restore the log
+      // [1.3] Restore the log
       const restoredLog = await tx.inventoryLog.update({
         where: { id: logId },
         data: { isActive: true },
@@ -313,6 +325,7 @@ router.patch('/:id/restore', verifyAdmin, async (req: Request, res: Response, ne
       return restoredLog;
     });
 
+    // * [SUCCESS] Inventory log restored
     info(`Restored inventory log ${id} and re-applied stock effect`);
     res.json(successResponse("Inventory log restored and stock updated successfully", result));
   } catch (err: unknown) {
@@ -325,25 +338,28 @@ router.patch('/:id/restore', verifyAdmin, async (req: Request, res: Response, ne
   }
 });
 
-// * [DELETE] Soft Delete Inventory Log + Revert Item Quantity
+// * [DELETE] Soft Delete Inventory Log (Revert Item Quantity)
 // ? /api/inventory/:id
-router.delete('/:id', verifyAdmin, async (req: Request, res: Response, next: NextFunction) => {
+router.delete('/:id', verifyRole(['ADMIN']), async (req: Request, res: Response, next: NextFunction) => {
   const { id } = req.params;
 
   try {
+    // [1] Soft delete inventory log
     const result = await prisma.$transaction(async (tx) => {
       const logId = Number(id);
 
-      // 1. Get the existing log
+      // [1.1] Fetch existing log
       const existingLog = await tx.inventoryLog.findUnique({
         where: { id: logId },
         select: { type: true, quantity: true, itemId: true, isActive: true }
       });
 
+      // ! [ERROR] Non-existing inventory log
       if (!existingLog) {
         throw new Error(`Inventory log with id ${id} not found`);
       }
 
+      // ! [ERROR] Already inactive inventory log
       if (!existingLog.isActive) {
         throw new Error("Log is already inactive");
       }
@@ -351,22 +367,22 @@ router.delete('/:id', verifyAdmin, async (req: Request, res: Response, next: Nex
       const { type, quantity, itemId } = existingLog;
       const qty = Number(quantity);
 
-      // 2. Revert the stock effect
+      // [1.2] Revert the stock effect
       if (type === "STOCK_IN") {
-        // Undo Stock In → decrement quantity
+        // Undo 'STOCK_IN' => decrement quantity
         await tx.item.update({
           where: { id: itemId },
           data: { quantity: { decrement: qty } }
         });
       } else {
-        // Undo Stock Out → increment quantity
+        // Undo 'STOCK_OUT => increment quantity
         await tx.item.update({
           where: { id: itemId },
           data: { quantity: { increment: qty } }
         });
       }
 
-      // 3. Soft delete the log (set isActive = false)
+      // [1.3] Soft delete the log (set isActive = false)
       const deletedLog = await tx.inventoryLog.update({
         where: { id: logId },
         data: { isActive: false },
@@ -376,6 +392,7 @@ router.delete('/:id', verifyAdmin, async (req: Request, res: Response, next: Nex
       return deletedLog;
     });
 
+    // * [SUCCESS] Inventory log soft deleted
     info(`Soft deleted inventory log ${id} and reverted stock`);
     res.json(successResponse("Inventory log soft deleted and stock reverted successfully", result));
   } catch (err: unknown) {

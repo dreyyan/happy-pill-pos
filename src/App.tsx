@@ -28,6 +28,8 @@ import CashierProfile from "./pages/cashier/CashierProfile";
 // [IMPORT] Context & Layout
 import PrivateRoute from "./context/PrivateRoute";
 import Layout from "./Layout";
+import CashierSalesReport from "./pages/cashier/CashierSalesReport";
+import CashierInventory from "./pages/cashier/CashierInventory";
 
 function App() {
   return (
@@ -132,6 +134,14 @@ function App() {
           }
         />
         <Route
+          path="/cashier/sales-report"
+          element={
+            <PrivateRoute>
+              <CashierSalesReport />
+            </PrivateRoute>
+          }
+        />
+        <Route
           path="/cashier/orders"
           element={
             <PrivateRoute>
@@ -144,6 +154,14 @@ function App() {
           element={
             <PrivateRoute>
               <CashierTransactions />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/cashier/inventory"
+          element={
+            <PrivateRoute>
+              <CashierInventory />
             </PrivateRoute>
           }
         />

@@ -179,15 +179,27 @@ const Header = () => {
           {role === "Cashier" && (
             <>
               <SidebarLink
-                icon="/sales-filled-icon.svg"
-                text="Sales"
-                to="/cashier/sales"
+                icon="/orders-filled-icon.svg"
+                text="Orders"
+                to="/cashier/orders"
+                onClick={closeSidebar}
+              />
+              <SidebarLink
+                icon="/transaction-filled-icon.svg"
+                text="Transactions"
+                to="/cashier/transactions"
                 onClick={closeSidebar}
               />
               <SidebarLink
                 icon="/inventory-filled-icon.svg"
                 text="Inventory"
                 to="/cashier/inventory"
+                onClick={closeSidebar}
+              />
+              <SidebarLink
+                icon="/sales-report-filled-icon.svg"
+                text="Sales"
+                to="/cashier/sales-report"
                 onClick={closeSidebar}
               />
             </>

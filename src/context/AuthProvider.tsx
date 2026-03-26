@@ -30,7 +30,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     localStorage.removeItem("token");
     localStorage.removeItem("role");
     setShowTokenExpiredModal(false);
-    navigate("/");
+    navigate("/login/admin");
   };
 
   return (

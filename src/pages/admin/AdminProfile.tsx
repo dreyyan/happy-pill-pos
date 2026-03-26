@@ -33,6 +33,7 @@ const AdminProfile = () => {
   const { setShowTokenExpiredModal } = useAuth();
 
   // [STATES] Profile
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [profile, setProfile] = useState<AdminProfileData | null>(null);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState<AdminForm>({

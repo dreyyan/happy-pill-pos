@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import PrimaryButton from "../../components/PrimaryButton";
 import CrudModal from "../../components/CrudModal";
 import React from "react";
+import Skeleton from "../../components/Skeleton";
 
 // ? [INTERFACES]
 interface Order {
@@ -26,6 +27,7 @@ interface CreateOrderForm {
   firstName: string;
   pax: string;
   status: string;
+  [key: string]: unknown;
 }
 
 interface ItemForOrder {
@@ -38,6 +40,7 @@ interface ItemForOrder {
 
 type SortOption = "date-desc" | "date-asc" | "amount-desc" | "amount-asc";
 
+// ? [CONSTANTS]
 const STATUS_STYLES: Record<string, string> = {
   PENDING: "bg-yellow-100 text-yellow-700",
   CONFIRMED: "bg-blue-100 text-blue-700",
@@ -65,6 +68,9 @@ const ALL_STATUS_OPTIONS = [
   { label: "Cancelled", value: "CANCELLED" },
 ];
 
+const token = () => localStorage.getItem("token");
+const apiBase = import.meta.env.VITE_API_BASE_URL;
+
 const sortLabels: Record<SortOption, string> = {
   "date-desc": "Newest First",
   "date-asc": "Oldest First",
@@ -73,20 +79,23 @@ const sortLabels: Record<SortOption, string> = {
 };
 
 const AdminOrders = () => {
+  // [STATES] Orders & Items
   const [orders, setOrders] = useState<Order[]>([]);
   const [allItems, setAllItems] = useState<ItemForOrder[]>([]);
   const [loading, setLoading] = useState(true);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  // Filters
+  // [STATES] Filters
   const [search, setSearch] = useState("");
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [sortOption, setSortOption] = useState<SortOption>("date-desc");
   const [showSortFilters, setShowSortFilters] = useState(false);
   const filterRef = useRef<HTMLDivElement>(null);
 
-  // Create/Edit Modal
+  // [STATES] Create/Edit Modal
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editingOrderId, setEditingOrderId] = useState<number | null>(null);
@@ -105,15 +114,12 @@ const AdminOrders = () => {
   }[]>([]);
   const [itemSearch, setItemSearch] = useState("");
 
-  // Quick Status Edit Modal
+  // [STATES] Quick Status Edit Modal
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingOrder, setEditingOrder] = useState<Order | null>(null);
   const [editFormData, setEditFormData] = useState({ status: "PENDING" });
 
-  const token = () => localStorage.getItem("token");
-  const apiBase = import.meta.env.VITE_API_BASE_URL;
-
-  // Fetch Data
+  // * [EFFECT] Fetch Orders
   const fetchOrders = useCallback(async () => {
     try {
       setLoading(true);
@@ -129,6 +135,7 @@ const AdminOrders = () => {
     }
   }, [apiBase]);
 
+  // * [EFFECT] Fetch Items
   const fetchItems = async () => {
     try {
       const res = await fetch(`${apiBase}/api/items/`, {
@@ -146,7 +153,7 @@ const AdminOrders = () => {
     fetchItems();
   }, [fetchOrders]);
 
-  // Open Modal for Create or Full Edit
+  // [HANDLE] Open Modal for Create or Full Edit
   const openOrderModal = (order?: Order) => {
     if (order) {
       // Edit mode - only allow if not completed
@@ -182,7 +189,7 @@ const AdminOrders = () => {
     setShowCreateModal(true);
   };
 
-  // Save Order (Create or Update)
+  // * [HANDLE] Save Order (Create or Update)
   const handleSaveOrder = async () => {
     setFormError("");
     if (!formData.tableNumber || !formData.firstName) {
@@ -272,7 +279,7 @@ const AdminOrders = () => {
     }
   };
 
-  // Soft Delete
+  // * [HANDLE] Soft Delete
   const handleDelete = async (id: number) => {
     if (!confirm("Are you sure you want to delete this order?")) return;
 
@@ -287,12 +294,13 @@ const AdminOrders = () => {
       } else {
         alert(data.message || "Failed to delete order");
       }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (err) {
       alert("Something went wrong while deleting the order");
     }
   };
 
-  // Item Management with Stock Check
+  // * [HANDLE] Item Management with Stock Check
   const addItem = (item: ItemForOrder) => {
     const existing = selectedOrderItems.find((i) => i.itemId === item.id);
     const newQty = existing ? existing.quantity + 1 : 1;
@@ -314,6 +322,7 @@ const AdminOrders = () => {
     }
   };
 
+  // * [HANDLE] Change/edit quantity
   const changeQuantity = (itemId: number, qty: number) => {
     if (qty < 1) return;
 
@@ -328,12 +337,14 @@ const AdminOrders = () => {
     );
   };
 
+  // * [HANDLE] Remove item
   const removeItem = (itemId: number) => {
     setSelectedOrderItems((prev) => prev.filter((i) => i.itemId !== itemId));
   };
 
   const grandTotal = selectedOrderItems.reduce((sum, i) => sum + i.price * i.quantity, 0);
 
+  // [FILTER]
   const displayedOrders = orders
     .filter((order) => {
       const q = search.toLowerCase();
@@ -353,6 +364,7 @@ const AdminOrders = () => {
       }
     });
 
+  // [HANDLE] Format date
   const formatDate = (iso: string) =>
     new Date(iso).toLocaleDateString("en-PH", {
       year: "numeric",
@@ -362,13 +374,12 @@ const AdminOrders = () => {
       minute: "2-digit",
     });
 
-  if (loading) return <div className="py-10 text-center">Loading orders...</div>;
-  if (error) return <div className="py-10 text-red-500 text-center">{error}</div>;
+  // ? [LOADING STATE]
+  if (loading) return <Skeleton />;
 
   return (
     <div className="py-10 px-4 space-y-4">
-
-      {/* Unified Create / Edit Modal */}
+      {/* [CRUD MODAL] Unified Create / Edit Modal */}
       <CrudModal<CreateOrderForm>
         isOpen={showCreateModal}
         title={isEditing ? `Edit Order #${editingOrderId}` : "Take New Order"}
@@ -400,8 +411,10 @@ const AdminOrders = () => {
         ]}
       >
         <div className="mt-6">
+          {/* [UI] Page Title */}
           <label className="font-roboto text-sm font-semibold mb-2 block">Add Items</label>
 
+          {/* [SEARCH BAR] Search Item */}
           <input
             type="text"
             placeholder="Search items..."
@@ -410,6 +423,7 @@ const AdminOrders = () => {
             className="w-full mb-3 bg-[var(--color-bg-50)] font-roboto rounded-sm py-2 px-3 outline-none focus:ring-2 focus:ring-[var(--color-primary-600)] text-sm"
           />
 
+          {/* [SECTION] Items Display */}
           <div className="max-h-64 overflow-y-auto border border-[var(--color-bg-300)] rounded bg-white mb-6">
             {allItems
               .filter((item) => item.quantity > 0)
@@ -469,7 +483,7 @@ const AdminOrders = () => {
         </div>
       </CrudModal>
 
-      {/* Quick Status Edit Modal */}
+      {/* [CRUD MODAL] Quick Status Edit Modal */}
       <CrudModal
         isOpen={showEditModal}
         title={`Update Order #${editingOrder?.id}`}
@@ -494,12 +508,12 @@ const AdminOrders = () => {
         ]}
       />
 
-      {/* Header */}
+      {/* [SECTION] Header */}
       <div className="flex flex-col justify-between items-center">
         <h1 className="font-bold text-2xl">Customer Orders</h1>
       </div>
 
-      {/* Filters */}
+      {/* [SECTION] Filters */}
       <div className="flex items-center gap-4">
         <div className="relative flex-1">
           <input
@@ -544,13 +558,14 @@ const AdminOrders = () => {
         </div>
       </div>
 
+      {/* [PRIMARY BUTTON] New Order */}
       <PrimaryButton
         text="New Order"
         iconSrc="/add-icon.svg"
         onClick={() => openOrderModal()}
       />
 
-      {/* Orders Display */}
+      {/* [SECTION] Orders Display */}
       <div className="mt-4">
         {displayedOrders.length === 0 && (
           <div className="flex flex-col items-center justify-center py-10 text-center text-[var(--color-text-800)]">
@@ -613,7 +628,7 @@ const AdminOrders = () => {
               ))}
             </div>
 
-            {/* Desktop Table */}
+            {/* [SECTION] Desktop Table */}
             <div className="hidden sm:block overflow-x-auto rounded-lg">
               <table className="min-w-full bg-white shadow-md table-auto border-collapse">
                 <thead className="bg-[var(--color-primary-600)] text-white font-figtree">

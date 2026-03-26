@@ -121,7 +121,7 @@ const handleLogin = async () => {
             onClose={() => setShowModal(false)}
             onConfirm={() => {
               setShowModal(false);
-              if (redirectOnConfirm) navigate("/admin/dashboard");
+              if (redirectOnConfirm) navigate("/cashier/dashboard");
             }}
             title={modalTitle}
             message={modalMessage}

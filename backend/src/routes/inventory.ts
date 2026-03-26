@@ -13,7 +13,7 @@ const router = Router();
 
 // * [GET] Get All Inventory Logs
 // ? /api/inventory/
-router.get('/', verifyRole(['ADMIN']), async (req: Request, res: Response, next: NextFunction) => {
+router.get('/', verifyRole(['ADMIN', 'CASHIER']), async (req: Request, res: Response, next: NextFunction) => {
     try {
         const { itemId, type, createdById } = req.query;
 
@@ -102,7 +102,7 @@ router.get('/:id', verifyRole(['ADMIN', 'CASHIER']), async (req: Request, res: R
 
 // * [POST] Create Inventory Log (Update Item Quantity)
 // ? /api/inventory/
-router.post('/', verifyRole(['ADMIN']), async (req: Request, res: Response, next: NextFunction) => {
+router.post('/', verifyRole(['ADMIN', 'CASHIER']), async (req: Request, res: Response, next: NextFunction) => {
   const { itemId, type, quantity, createdById } = req.body;
 
   // ! [ERROR] Missing required fields
@@ -156,7 +156,7 @@ router.post('/', verifyRole(['ADMIN']), async (req: Request, res: Response, next
 
 // * [PUT] Update Inventory Log (Adjust Item Quantity (Delta) - Prevents Negative Stock)
 // ? /api/inventory/:id
-router.put('/:id', verifyRole(['ADMIN']), async (req: Request, res: Response, next: NextFunction) => {
+router.put('/:id', verifyRole(['ADMIN', 'CASHIER']), async (req: Request, res: Response, next: NextFunction) => {
   const { id } = req.params;
   const { type, quantity } = req.body;
 
@@ -275,7 +275,7 @@ router.put('/:id', verifyRole(['ADMIN']), async (req: Request, res: Response, ne
 
 // * [PATCH] Restore Inventory Log (Re-apply Stock Effect)
 // ? /api/inventory/:id/restore
-router.patch('/:id/restore', verifyRole(['ADMIN']), async (req: Request, res: Response, next: NextFunction) => {
+router.patch('/:id/restore', verifyRole(['ADMIN', 'CASHIER']), async (req: Request, res: Response, next: NextFunction) => {
   const { id } = req.params;
 
   try {
@@ -340,7 +340,7 @@ router.patch('/:id/restore', verifyRole(['ADMIN']), async (req: Request, res: Re
 
 // * [DELETE] Delete Inventory Log (Soft | Revert Item Quantity)
 // ? /api/inventory/:id
-router.delete('/:id', verifyRole(['ADMIN']), async (req: Request, res: Response, next: NextFunction) => {
+router.delete('/:id', verifyRole(['ADMIN', 'CASHIER']), async (req: Request, res: Response, next: NextFunction) => {
   const { id } = req.params;
 
   try {

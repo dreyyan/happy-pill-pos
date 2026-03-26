@@ -7,147 +7,78 @@ import { prisma } from '../lib/prisma';
 import { errorResponse } from '../utils/response';
 import { error, info } from '../utils/logger';
 
-// [INTERFACE] JWT Payload
+// ? [TYPES]
+type Role = 'ADMIN' | 'CASHIER';
+
+// ? [INTERFACE]
 interface JwtPayload {
-    userId?: number;
-    role?: 'ADMIN' | 'CASHIER';
+  userId?: number;
+  role?: Role;
 }
 
-// * [MIDDLEWARE] Verify Admin
-const verifyAdmin = async (req: Request, res: Response, next: NextFunction) => {
+export const verifyRole = (allowedRoles: Role[]) =>
+async (req: Request, res: Response, next: NextFunction) => {
     try {
-        // [1] Read token from Authorization header
+        // [1] Get token
         const authHeader = req.headers.authorization;
+
+        // ! [ERROR] Missing token
         if (!authHeader?.startsWith('Bearer ')) {
             return res.status(401).json(errorResponse("Unauthorized: token missing"));
         }
+
         const token = authHeader.split(' ')[1];
 
-        // [2] Decode JWT
-        const decoded = jwt.verify(token, process.env.JWT_SECRET!) as JwtPayload;
+        // [2] Verify JWT
+        const decoded = jwt.verify(
+            token,
+            process.env.JWT_SECRET!
+        ) as JwtPayload;
 
-        // ! [ERROR] Token invalid or missing admin info
-        if (!decoded?.userId || decoded.role !== 'ADMIN') {
-            return res.status(403).json(errorResponse("Unauthorized: Admins only"));
+        // ! [ERROR] Invalid payload
+        if (!decoded?.userId || !decoded.role) {
+            return res.status(403).json(errorResponse("Invalid token payload"));
+        }
+
+        // ? Check if role allowed
+        if (!allowedRoles.includes(decoded.role)) {
+            return res.status(403).json(errorResponse("Access denied"));
         }
 
         // [3] Fetch user from DB
         const user = await prisma.user.findUnique({
             where: { id: decoded.userId },
-            include: { admin: true }
-        });
-
-        // ! [ERROR] User not found or inactive
-        if (!user || !user.isActive || !user.admin) {
-            return res.status(403).json(errorResponse("User not found or inactive"));
-        }
-
-        // [SUCCESS] Attach user to request and continue
-        info(`Admin verified: ${user.email}`);
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (req as any).user = {
-            userId: user.id,
-            role: 'ADMIN',
-            email: user.email
-        };
-        next();
-    } catch (err: unknown) {
-        let errorMessage = "Error verifying admin";
-        if (err instanceof Error) {
-            errorMessage = err.message;
-            error(`verifyAdmin error: ${errorMessage}`);
-        } else {
-            error(`verifyAdmin unknown error: ${JSON.stringify(err)}`);
-        }
-        res.status(401).json(errorResponse(errorMessage));
-        next(err);
-    }
-};
-
-// * [MIDDLEWARE] Verify Cashier
-const verifyCashier = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-        const authHeader = req.headers.authorization;
-        if (!authHeader?.startsWith('Bearer ')) {
-            return res.status(401).json(errorResponse("Unauthorized: token missing"));
-        }
-        const token = authHeader.split(' ')[1];
-
-        const decoded = jwt.verify(token, process.env.JWT_SECRET!) as JwtPayload;
-
-        if (!decoded?.userId || decoded.role !== 'CASHIER') {
-            return res.status(403).json(errorResponse("Unauthorized: Cashiers only"));
-        }
-
-        const user = await prisma.user.findUnique({
-            where: { id: decoded.userId },
-            include: { cashier: true }
-        });
-
-        if (!user || !user.isActive || !user.cashier) {
-            return res.status(403).json(errorResponse("User not found or inactive"));
-        }
-
-        info(`Cashier verified: ${user.email}`);
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (req as any).user = user;
-        next();
-    } catch (err: unknown) {
-        let errorMessage = "Error verifying cashier";
-        if (err instanceof Error) {
-            errorMessage = err.message;
-            error(`verifyCashier error: ${errorMessage}`);
-        } else {
-            error(`verifyCashier unknown error: ${JSON.stringify(err)}`);
-        }
-        res.status(401).json(errorResponse(errorMessage));
-        next(err);
-    }
-};
-
-// * [MIDDLEWARE] Verify Admin or Cashier
-const verifyAdminOrCashier = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-        const authHeader = req.headers.authorization;
-        if (!authHeader?.startsWith('Bearer ')) {
-            return res.status(401).json(errorResponse("Unauthorized: token missing"));
-        }
-        const token = authHeader.split(' ')[1];
-
-        const decoded = jwt.verify(token, process.env.JWT_SECRET!) as JwtPayload;
-
-        if (!decoded?.userId || !decoded.role) {
-            return res.status(403).json(errorResponse("Unauthorized: Admin or Cashier only"));
-        }
-
-        const user = await prisma.user.findUnique({
-            where: { id: decoded.userId },
             include: { admin: true, cashier: true }
         });
 
+        // ! [ERROR] Inactive / non-existing user
         if (!user || !user.isActive) {
             return res.status(403).json(errorResponse("User not found or inactive"));
         }
 
-        if ((decoded.role === 'ADMIN' && user.admin) || (decoded.role === 'CASHIER' && user.cashier)) {
-            info(`User verified: ${user.email} (${decoded.role})`);
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            (req as any).user = user;
-            next();
-        } else {
-            return res.status(403).json(errorResponse("Unauthorized: Admin or Cashier only"));
+        // Validate role record exists
+        if (
+            (decoded.role === 'ADMIN' && !user.admin) ||
+            (decoded.role === 'CASHIER' && !user.cashier)
+        ) {
+            // ! [ERROR] Missing role record
+            return res.status(403).json(errorResponse("Role record missing"));
         }
-    } catch (err: unknown) {
-        let errorMessage = "Error verifying user";
-        if (err instanceof Error) {
-            errorMessage = err.message;
-            error(`verifyAdminOrCashier error: ${errorMessage}`);
-        } else {
-            error(`verifyAdminOrCashier unknown error: ${JSON.stringify(err)}`);
-        }
-        res.status(401).json(errorResponse(errorMessage));
-        next(err);
+
+        // * [SUCCESS] Attach safe user object
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (req as any).user = {
+            userId: user.id,
+            role: decoded.role,
+            email: user.email
+        };
+
+        info(`User verified: ${user.email} (${decoded.role})`);
+
+        next();
+
+    } catch (err) {
+        error(`verifyRole error: ${err instanceof Error ? err.message : err}`);
+        return res.status(401).json(errorResponse("Invalid or expired token"));
     }
 };
-
-export { verifyAdmin, verifyCashier, verifyAdminOrCashier };

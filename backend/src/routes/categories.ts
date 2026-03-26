@@ -13,7 +13,7 @@ const router = Router();
 
 // * [GET] Get All Categories
 // ? /api/categories/
-router.get('/', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/', verifyRole(['ADMIN', 'CASHIER']), async (req: Request, res: Response, next: NextFunction) => {
     try {
         // [1] Fetch all categories
         const categories = await prisma.category.findMany({

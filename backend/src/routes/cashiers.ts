@@ -14,7 +14,7 @@ const router = Router();
 
 // * [GET] Get All Cashiers
 // ? /api/cashiers/
-router.get('/', verifyRole(['CASHIER']), async (req: Request, res: Response, next: NextFunction) => {
+router.get('/', verifyRole(['ADMIN']), async (req: Request, res: Response, next: NextFunction) => {
     try {
         // [1] Fetch all cashiers
         const cashiers = await prisma.cashier.findMany({

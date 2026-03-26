@@ -8,7 +8,7 @@ import { prisma } from './lib/prisma';
 import { authRoutes } from './routes/auth';
 import { itemRoutes } from './routes/item';
 import { adminRoutes } from './routes/admin';
-import { cashiersRoutes } from './routes/cashiers';
+import { cashierRoutes } from './routes/cashiers/index';
 import { inventoryRoutes } from './routes/inventory';
 import { transactionRoutes } from './routes/transactions';
 import { reportsRoutes } from './routes/reports';
@@ -38,7 +38,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 // [ROUTES] Main
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
-app.use('/api/cashiers', cashiersRoutes);
+app.use('/api/cashier', cashierRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/items', itemRoutes);
 app.use('/api/inventory', inventoryRoutes);

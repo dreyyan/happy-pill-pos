@@ -19,6 +19,7 @@ const upload = multer({ dest: 'uploads/' });
 
 const router = Router();
 
+// ? [INTERFACE]
 interface CsvUserRow {
   Name?: string;
   name?: string;

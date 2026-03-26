@@ -50,7 +50,7 @@ const AdminSettings = () => {
 
     // ! [ERROR] Empty input fields
     if (!currentPassword || !newPassword || !confirmPassword) {
-      setModalTitle("Validation Error");
+      setModalTitle("Incomplete Fields");
       setModalMessage("All password fields are required.");
       setModalType("error");
       setShowModal(true);
@@ -59,7 +59,7 @@ const AdminSettings = () => {
 
     // ! [ERROR] Password mismatch
     if (newPassword !== confirmPassword) {
-      setModalTitle("Validation Error");
+      setModalTitle("Passwords Do Not Match");
       setModalMessage("New password and confirmation do not match.");
       setModalType("error");
       setShowModal(true);
@@ -100,11 +100,22 @@ const AdminSettings = () => {
       // Reset form fields
       setForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
     } catch (err: unknown) {
-      // ![ERROR] Network or server issue
       let message = "Failed to update password.";
-      if (err instanceof Error) message = err.message;
+      let title = "Error";
 
-      setModalTitle("Error");
+      if (err instanceof Error) {
+        message = err.message;
+
+        // Customize title for known backend errors
+        if (message.includes("Current password is incorrect")) {
+          title = "Incorrect Password";
+          message = "The current password you entered does not match our records. Please try again.";
+        } else if (message.includes("New password")) {
+          title = "Password Error";
+        }
+      }
+
+      setModalTitle(title);
       setModalMessage(message);
       setModalType("error");
       setShowModal(true);

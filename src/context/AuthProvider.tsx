@@ -30,10 +30,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   // [HANDLE] Logout user
   const logout = () => {
+    navigate(`/login/${localStorage.getItem("role")}`);
     localStorage.removeItem("token");
     localStorage.removeItem("role");
     setShowTokenExpiredModal(false);
-    navigate("/login/admin");
   };
 
   return (

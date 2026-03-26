@@ -89,7 +89,7 @@ router.post('/login', async (req: Request, res: Response, next: NextFunction) =>
         };
         
         // [5] Sign token
-        const expiresIn = rememberMe ? '7d' : '1h';
+        const expiresIn = rememberMe ? '7d' : '1d';
         const token = generateToken(payload, expiresIn);
 
         // [6] Create data without password

@@ -7,7 +7,7 @@ import { successResponse, errorResponse } from '../utils/response';
 import { error, info } from '../utils/logger';
 
 // [IMPORT] Middleware
-import { verifyAdmin } from '../middleware/authMiddleware';
+import { verifyRole } from '../middleware/authMiddleware';
 
 const router = Router();
 
@@ -15,6 +15,7 @@ const router = Router();
 // ? /api/categories/
 router.get('/', async (req: Request, res: Response, next: NextFunction) => {
     try {
+        // [1] Fetch all categories
         const categories = await prisma.category.findMany({
             orderBy: { name: 'asc' },
             include: { subcategories: true }
@@ -34,11 +35,11 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
 
 // * [POST] Create Category
 // ? /api/categories/
-router.post('/', verifyAdmin, async (req: Request, res: Response, next: NextFunction) => {
+router.post('/', verifyRole(['ADMIN']), async (req: Request, res: Response, next: NextFunction) => {
     const { name, description, isActive } = req.body;
 
     try {
-        // Check if category already exists
+        // [1] Check if category already exists
         const existingCategory = await prisma.category.findUnique({
             where: { name },
         });
@@ -48,6 +49,7 @@ router.post('/', verifyAdmin, async (req: Request, res: Response, next: NextFunc
             return res.status(400).json(errorResponse("Category with this name already exists"));
         }
 
+        // [2] Create new category
         const newCategory = await prisma.category.create({
             data: { name, description, isActive }
         });
@@ -66,7 +68,7 @@ router.post('/', verifyAdmin, async (req: Request, res: Response, next: NextFunc
 
 // * [PUT] Update Category
 // ? /api/categories/:id
-router.put('/:id', verifyAdmin, async (req: Request, res: Response, next: NextFunction) => {
+router.put('/:id', verifyRole(['ADMIN']), async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
     const { name, description, isActive } = req.body;
 
@@ -101,7 +103,7 @@ router.put('/:id', verifyAdmin, async (req: Request, res: Response, next: NextFu
 
 // * [PATCH] Reactivate Category
 // ? /api/categories/:id/reactivate
-router.patch('/:id/reactivate', verifyAdmin, async (req: Request, res: Response, next: NextFunction) => {
+router.patch('/:id/reactivate', verifyRole(['ADMIN']), async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
 
     try {
@@ -135,7 +137,7 @@ router.patch('/:id/reactivate', verifyAdmin, async (req: Request, res: Response,
 
 // * [DELETE] Soft Delete Category
 // ? /api/categories/:id
-router.delete('/:id', verifyAdmin, async (req: Request, res: Response, next: NextFunction) => {
+router.delete('/:id', verifyRole(['ADMIN']), async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
 
     try {
@@ -169,7 +171,7 @@ router.delete('/:id', verifyAdmin, async (req: Request, res: Response, next: Nex
 
 // * [DELETE] Hard Delete Category
 // ? /api/categories/:id/hard
-router.delete('/:id/hard', verifyAdmin, async (req: Request, res: Response, next: NextFunction) => {
+router.delete('/:id/hard', verifyRole(['ADMIN']), async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
     const categoryId = Number(id);
 

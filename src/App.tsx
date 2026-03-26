@@ -53,7 +53,7 @@ function App() {
           }
         />
         <Route
-          path="/admin/cashiers"
+          path="/admin/cashier"
           element={
             <PrivateRoute>
               <AdminCashiers />

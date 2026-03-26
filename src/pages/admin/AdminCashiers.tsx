@@ -86,7 +86,7 @@ const AdminCashiers = () => {
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch(`${apiBase}/api/cashiers/`, {
+        const res = await fetch(`${apiBase}/api/cashier/`, {
           headers: { Authorization: `Bearer ${token()}` },
         });
 
@@ -133,7 +133,7 @@ const AdminCashiers = () => {
 
     try {
       setCreating(true);
-      const res = await fetch(`${apiBase}/api/cashiers/`, {
+      const res = await fetch(`${apiBase}/api/cashier/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -170,7 +170,7 @@ const AdminCashiers = () => {
     try {
       setCreating(true);
       const { password, ...payload } = formData; // omit password on edit
-      const res = await fetch(`${apiBase}/api/cashiers/${selectedCashier.id}`, {
+      const res = await fetch(`${apiBase}/api/cashier/${selectedCashier.id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

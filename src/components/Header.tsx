@@ -165,7 +165,7 @@ const Header = () => {
               <SidebarLink
                 icon="/cashier-filled-icon.svg"
                 text="Cashiers"
-                to="/admin/cashiers"
+                to="/admin/cashier"
                 onClick={closeSidebar}
               />
               <SidebarLink

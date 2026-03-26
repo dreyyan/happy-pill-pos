@@ -8,7 +8,7 @@ import { prisma } from './lib/prisma';
 import { authRoutes } from './routes/auth';
 import { itemRoutes } from './routes/item';
 import { adminRoutes } from './routes/admin';
-import { cashierRoutes } from './routes/cashiers/index';
+import { cashierRoutes } from './routes/cashier/index';
 import { inventoryRoutes } from './routes/inventory';
 import { transactionRoutes } from './routes/transactions';
 import { reportsRoutes } from './routes/reports';

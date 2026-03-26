@@ -6,6 +6,7 @@ import { useAuth } from "../../context/useAuth";
 import PrimaryButton from "../../components/PrimaryButton";
 import CrudModal from "../../components/CrudModal";
 import Modal from "../../components/Modal";
+import React from "react";
 
 const AdminItems = () => {
   const { setShowTokenExpiredModal } = useAuth();
@@ -44,7 +45,11 @@ const AdminItems = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  // Initial form (no quantity)
+  // [STATE] CSV Profile
+  const [csvFile, setCsvFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
+
+  // [STATE] Form
   const initialForm: CreateItemForm = {
     name: "",
     sku: "",
@@ -54,14 +59,100 @@ const AdminItems = () => {
     subcategoryId: undefined,
     unit: "",
   };
-
   const [formData, setFormData] = useState(initialForm);
-
   const selectedCategory = categories.find((c) => c.id === formData.categoryId);
 
-  // ─────────────────────────────────────────────────────────────
-  // Handlers
-  // ─────────────────────────────────────────────────────────────
+  // [TYPES] Sort options
+  type SortOption = 
+    | "name-asc" 
+    | "name-desc" 
+    | "sku-asc" 
+    | "sku-desc" 
+    | "price-asc" 
+    | "price-desc";
+
+  // [LABELS] Display names for sorting
+  const sortLabels: Record<SortOption, string> = {
+    "name-asc": "Name (A → Z)",
+    "name-desc": "Name (Z → A)",
+    "sku-asc": "SKU (A → Z)",
+    "sku-desc": "SKU (Z → A)",
+    "price-asc": "Price (Low → High)",
+    "price-desc": "Price (High → Low)",
+  };
+
+  // [HANDLE] CSV selection
+  const handleCsvChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      setCsvFile(e.target.files[0]);
+    }
+  };
+
+  // * [HANDLE] Upload CSV and Auto-Create Items
+  const handleUploadCsv = async () => {
+    if (!csvFile) {
+      setModalTitle("Validation Error");
+      setModalMessage("Please select a CSV file to upload.");
+      setModalType("error");
+      setShowModal(true);
+      return;
+    }
+
+    const token = localStorage.getItem("token");
+    try {
+      setUploading(true);
+
+      const formDataObj = new FormData();
+      formDataObj.append("file", csvFile);
+
+      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/items/import-items`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: formDataObj,
+      });
+
+      if (res.status === 401) {
+        setShowTokenExpiredModal(true);
+        return;
+      }
+
+      const data = await res.json();
+
+      if (!data.success) {
+        const cleanMessage = data.message?.replace(/^\[ERROR\]\s*/, "") || "Failed to upload CSV";
+        throw new Error(cleanMessage);
+      }
+
+      // * [SUCCESS] CSV uploaded
+      setModalTitle("Success");
+      setModalMessage(`Successfully imported ${data.data.createdCount} items from CSV!`);
+      setModalType("success");
+      setShowModal(true);
+
+      // Refresh items list after import
+      const resRefresh = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/items`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const refreshData = await resRefresh.json();
+      if (refreshData.success) setItems(refreshData.data);
+
+      // Reset file input
+      setCsvFile(null);
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-expect-error
+      document.getElementById("csv-upload")!.value = "";
+    } catch (err: unknown) {
+      let message = "Failed to upload CSV.";
+      if (err instanceof Error) message = err.message;
+
+      setModalTitle("Error");
+      setModalMessage(message);
+      setModalType("error");
+      setShowModal(true);
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const confirmDelete = (item: Item) => {
     setItemToDelete(item);
@@ -453,19 +544,9 @@ const AdminItems = () => {
             setShowCreateModal(true);
           }}
         />
-
-        <input type="file" accept=".csv" ref={fileInputRef} onChange={handleFileChange} className="hidden" />
-
-        <PrimaryButton
-          text="Auto-Add Items"
-          color="F59E0B"
-          onClick={handleAutoAddClick}
-        />
       </div>
 
-      {/* ───────────────────────────────────────────────────────────── */}
-      {/* ITEMS DISPLAY - Cards on Mobile / Table on Desktop */}
-      {/* ───────────────────────────────────────────────────────────── */}
+      {/* [SECTION] Items display */}
       <div className="mt-4">
         {displayedItems.length === 0 && (
           <div className="flex flex-col items-center justify-center py-10 text-center text-[var(--color-text-800)]">
@@ -567,6 +648,25 @@ const AdminItems = () => {
             </tbody>
           </table>
         </div>
+      </div>
+      {/* [SECTION] CSV Upload */}
+      <div className="w-full max-w-md bg-bg-100 border border-bg-300 rounded-lg shadow-sm p-5 space-y-4">
+        <h3 className="text-text-700 font-semibold">Auto-Add Items (CSV)</h3>
+        <p className="text-text-500 text-sm">
+          Upload 'items-database.csv'.
+        </p>
+
+        {/* [INPUT] Upload CSV */}
+        <input
+          id="csv-upload"
+          type="file"
+          accept=".csv"
+          onChange={handleCsvChange}
+          className="w-full border border-bg-300 rounded-md p-2 text-sm"
+        />
+
+        {/* [PRIMARY BUTTON] Upload CSV */}
+        <PrimaryButton text={`${uploading ? "Uploading..." : "Upload CSV & Add Items"}`} onClick={handleUploadCsv} disabled={uploading} />
       </div>
     </div>
   );

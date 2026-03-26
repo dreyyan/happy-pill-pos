@@ -6,6 +6,7 @@ import React from "react";
 import PrimaryButton from "../../components/PrimaryButton";
 import CrudModal from "../../components/CrudModal";
 import Modal from "../../components/Modal";
+import Skeleton from "../../components/Skeleton";
 
 // ?[INTERFACES]
 interface InventoryItem {
@@ -304,8 +305,8 @@ useEffect(() => {
       }
     });
 
-  if (loading) return <p>Loading inventory...</p>;
-  if (error)   return <p className="text-red-500">{error}</p>;
+  // ? [LOADING STATE]
+  if (loading) return <Skeleton />;
 
   return (
     <div className="py-10 px-4 space-y-4 relative">

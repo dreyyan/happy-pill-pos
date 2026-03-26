@@ -234,10 +234,10 @@ model OrderItem {
   order         Order   @relation(fields: [orderId], references: [id])
   itemId        Int
   item          Item    @relation(fields: [itemId], references: [id])
-
   // ? Snapshot at time of order
   itemName      String
   priceAtOrder  Float
+  costAtOrder   Float   @default(0)
   quantity      Int
   subtotal      Float
 }

@@ -43,6 +43,10 @@ const AdminItems = () => {
 
   // [STATE] Categories
   const [categories, setCategories] = useState<Category[]>([]);
+
+  // [STATE] Mobile Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const MOBILE_PAGE_SIZE = 3;
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   // [STATE] CSV Profile
@@ -322,6 +326,22 @@ const AdminItems = () => {
 
   const handleAutoAddClick = () => fileInputRef.current?.click();
 
+  // [DERIVED] Mobile paginated slice of displayedItems
+  const totalPages = Math.ceil(displayedItems.length / MOBILE_PAGE_SIZE);
+  const paginatedMobileItems = displayedItems.slice(
+    (currentPage - 1) * MOBILE_PAGE_SIZE,
+    currentPage * MOBILE_PAGE_SIZE
+  );
+
+  // [HANDLERS] Mobile pagination
+  const prevPage = () => setCurrentPage((prev) => Math.max(prev - 1, 1));
+  const nextPage = () => setCurrentPage((prev) => Math.min(prev + 1, totalPages));
+
+  // [EFFECT] Reset to page 1 when filters/search/sort change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, sortOption, filterCategoryId, filterSubcategoryId]);
+
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -546,6 +566,34 @@ const AdminItems = () => {
         />
       </div>
 
+      {/* [SECTION] Pagination - Mobile only */}
+      {displayedItems.length > 0 && (
+        <div className="flex justify-between items-center space-x-4 mt-4 sm:hidden">
+          {/* [BUTTON] Previous */}
+          <button
+            onClick={prevPage}
+            disabled={currentPage === 1}
+            className={`text-button px-3 py-2 rounded ${
+              currentPage === 1 ? "bg-gray-300 cursor-not-allowed" : "bg-primary-500 text-white hover:opacity-90"
+            }`}
+          >
+            &lt; Prev
+          </button>
+          {/* [UI] Current Page */}
+          <span>Page {currentPage} of {totalPages}</span>
+          {/* [BUTTON] Next */}
+          <button
+            onClick={nextPage}
+            disabled={currentPage === totalPages}
+            className={`text-button px-3 py-2 rounded ${
+              currentPage === totalPages ? "bg-gray-300 cursor-not-allowed" : "bg-primary-500 text-white hover:opacity-90"
+            }`}
+          >
+            Next &gt;
+          </button>
+        </div>
+      )}
+
       {/* [SECTION] Items display */}
       <div className="mt-4">
         {displayedItems.length === 0 && (
@@ -560,7 +608,7 @@ const AdminItems = () => {
 
         {/* Mobile Card Layout */}
         <div className="space-y-4 sm:hidden">
-          {displayedItems.map((item) => (
+          {paginatedMobileItems.map((item) => (
             <div
               key={item.id}
               className="bg-white rounded-xl shadow-sm border border-[var(--color-bg-200)] p-4 hover:shadow-md transition-all"
@@ -612,7 +660,7 @@ const AdminItems = () => {
           ))}
         </div>
 
-        {/* Desktop Table Layout */}
+        {/* [SECTION] Items */}
         <div className="hidden sm:block overflow-x-auto rounded-lg">
           <table className="min-w-full bg-white shadow-md table-auto border-collapse">
             <thead className="bg-[var(--color-primary-600)] text-white font-figtree">

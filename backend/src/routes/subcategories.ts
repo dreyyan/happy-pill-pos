@@ -7,13 +7,13 @@ import { successResponse, errorResponse } from '../utils/response';
 import { error, info } from '../utils/logger';
 
 // [IMPORT] Middleware
-import { verifyAdmin } from '../middleware/authMiddleware';
+import { verifyRole } from '../middleware/authMiddleware';
 
 const router = Router();
 
 // * [GET] Get All Subcategories
 // ? /api/subcategories/
-router.get('/', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/', verifyRole(['ADMIN', 'CASHIER']), async (req: Request, res: Response, next: NextFunction) => {
     try {
         const subcategories = await prisma.subcategory.findMany({
             orderBy: { name: 'asc' },
@@ -34,7 +34,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
 
 // * [POST] Create Subcategory
 // ? /api/subcategories/
-router.post('/', verifyAdmin, async (req: Request, res: Response, next: NextFunction) => {
+router.post('/', verifyRole(['ADMIN']), async (req: Request, res: Response, next: NextFunction) => {
     const { name, categoryId, isActive } = req.body;
 
     try {
@@ -56,7 +56,7 @@ router.post('/', verifyAdmin, async (req: Request, res: Response, next: NextFunc
 
 // * [POST] Auto-create Subcategories
 // ? /api/subcategories/auto-create-all
-router.post('/auto-create-all', verifyAdmin, async (req: Request, res: Response, next: NextFunction) => {
+router.post('/auto-create-all', verifyRole(['ADMIN']), async (req: Request, res: Response, next: NextFunction) => {
     try {
         // [1] Define all subcategories
         const subcategories = [
@@ -118,7 +118,7 @@ router.post('/auto-create-all', verifyAdmin, async (req: Request, res: Response,
 
 // * [PUT] Update Subcategory
 // ? /api/subcategories/:id
-router.put('/:id', verifyAdmin, async (req: Request, res: Response, next: NextFunction) => {
+router.put('/:id', verifyRole(['ADMIN']), async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
     const { name, categoryId, isActive } = req.body;
 
@@ -153,7 +153,7 @@ router.put('/:id', verifyAdmin, async (req: Request, res: Response, next: NextFu
 
 // * [PATCH] Reactivate Subcategory
 // ? /api/subcategories/:id/reactivate
-router.patch('/:id/reactivate', verifyAdmin, async (req: Request, res: Response, next: NextFunction) => {
+router.patch('/:id/reactivate', verifyRole(['ADMIN']), async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
 
     try {
@@ -187,7 +187,7 @@ router.patch('/:id/reactivate', verifyAdmin, async (req: Request, res: Response,
 
 // * [DELETE] Soft Delete Subcategory
 // ? /api/subcategories/:id
-router.delete('/:id', verifyAdmin, async (req: Request, res: Response, next: NextFunction) => {
+router.delete('/:id', verifyRole(['ADMIN']), async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
 
     try {
@@ -221,7 +221,7 @@ router.delete('/:id', verifyAdmin, async (req: Request, res: Response, next: Nex
 
 // * [DELETE] Hard Delete Subcategory
 // ? /api/subcategories/:id/hard
-router.delete('/:id/hard', verifyAdmin, async (req: Request, res: Response, next: NextFunction) => {
+router.delete('/:id/hard', verifyRole(['ADMIN']), async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
 
     try {

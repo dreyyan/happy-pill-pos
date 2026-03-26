@@ -31,7 +31,7 @@ const AdminDashboard = () => {
 
   // [STATE] Profile
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   // [STATES] Dashboard Information
   const [totalAdmins, setTotalAdmins] = useState(0);

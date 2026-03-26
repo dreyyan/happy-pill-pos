@@ -50,6 +50,7 @@ const AdminCategories = () => {
   // [STATES]
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [error, setError] = useState<string | null>(null);
 
   // [STATE] Create Category Modal
@@ -87,6 +88,104 @@ const AdminCategories = () => {
   // [STATE] Delete Subcategory Modal
   const [showDeleteSubModal, setShowDeleteSubModal] = useState(false);
   const [subToDelete, setSubToDelete] = useState<{ sub: Subcategory; categoryId: number } | null>(null);
+
+  // [STATE] CSV Profile
+  const [csvFile, setCsvFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
+
+  // [STATES] Modal
+  const [showModal, setShowModal] = useState(false);
+  const [modalTitle, setModalTitle] = useState("");
+  const [modalMessage, setModalMessage] = useState("");
+  const [modalType, setModalType] = useState<"default" | "success" | "error" | "info">("default");
+
+  // * [EFFECT] Reset loading
+  useEffect(() => setLoading(false), []);
+
+  // [HANDLE] CSV selection
+  const handleCsvChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      setCsvFile(e.target.files[0]);
+    }
+  };
+
+  // * [HANDLE] Upload CSV and Auto-Create Categories & Subcategories
+  const handleUploadCsv = async () => {
+    if (!csvFile) {
+      setModalTitle("Validation Error");
+      setModalMessage("Please select a CSV file to upload.");
+      setModalType("error");
+      setShowModal(true);
+      return;
+    }
+
+    const token = localStorage.getItem("token");
+    try {
+      setUploading(true);
+
+      const formData = new FormData();
+      formData.append("file", csvFile);
+
+      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/categories/import`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      if (res.status === 401) {
+        setShowTokenExpiredModal(true);
+        return;
+      }
+
+      const data = await res.json();
+
+      if (!data.success) {
+        const cleanMessage = data.message?.replace(/^\[ERROR\]\s*/, "") || "Failed to upload CSV";
+        throw new Error(cleanMessage);
+      }
+
+      // * [SUCCESS] CSV uploaded
+      setModalTitle("Success");
+      setModalMessage(`Successfully imported ${data.data.createdCategories} categories and ${data.data.createdSubcategories} subcategories from CSV!`);
+      setModalType("success");
+      setShowModal(true);
+
+      // Refresh categories list after import
+      const fetchCategories = async () => {
+        setLoading(true);
+        try {
+          const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/categories`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          const result = await res.json();
+          if (result.success) setCategories(result.data);
+        } catch (err) {
+          console.error("Failed to refresh categories after CSV import", err);
+        } finally {
+          setLoading(false);
+        }
+      };
+      fetchCategories();
+
+      // Reset file input
+      setCsvFile(null);
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-expect-error
+      document.getElementById("csv-upload")!.value = "";
+    } catch (err: unknown) {
+      let message = "Failed to upload CSV.";
+      if (err instanceof Error) message = err.message;
+
+      setModalTitle("Error");
+      setModalMessage(message);
+      setModalType("error");
+      setShowModal(true);
+    } finally {
+      setUploading(false);
+    }
+  };
 
   // *[EFFECT] Fetch categories
   useEffect(() => {
@@ -278,6 +377,17 @@ const AdminCategories = () => {
 
   return (
     <div className="py-10 px-4 space-y-4">
+      {/* [COMPONENT] Modal */}
+      {showModal && (
+        <Modal
+          isOpen={showModal}
+          onClose={() => setShowModal(false)}
+          onConfirm={() => setShowModal(false)}
+          title={modalTitle}
+          message={modalMessage}
+          type={modalType}
+        />
+      )}
       {/* [CRUD MODAL] Delete Category */}
       {showDeleteCategoryModal && categoryToDelete && (
         <Modal
@@ -500,11 +610,32 @@ const AdminCategories = () => {
                     ))
                   )}
                 </div>
+
+
               </div>
             );
           })}
         </div>
       </div>
+        {/* [SECTION] CSV Upload */}
+        <div className="w-full max-w-md bg-bg-100 border border-bg-300 rounded-lg shadow-sm p-5 space-y-4">
+          <h3 className="text-text-700 font-semibold">Auto-Create Categories (CSV)</h3>
+          <p className="text-text-500 text-sm">
+            Upload 'items-database.csv'.
+          </p>
+
+          {/* [INPUT] Upload CSV */}
+          <input
+            id="csv-upload"
+            type="file"
+            accept=".csv"
+            onChange={handleCsvChange}
+            className="w-full border border-bg-300 rounded-md p-2 text-sm"
+          />
+
+          {/* [PRIMARY BUTTON] Upload CSV */}
+          <PrimaryButton text={`${uploading ? "Uploading..." : "Upload CSV & Create Users"}`} onClick={handleUploadCsv} disabled={uploading} />
+        </div>
     </div>
   );
 };

@@ -9,7 +9,115 @@ import { error, info } from '../utils/logger';
 // [IMPORT] Middleware
 import { verifyRole } from '../middleware/authMiddleware';
 
+// [IMPORT] CSV Parser
+import multer from 'multer';
+import { parse } from "csv-parse/sync";
+import fs from 'fs';
+
+const upload = multer({ dest: 'uploads/' });
+
 const router = Router();
+
+// ? [INTERFACE]
+interface CsvCategoryRow {
+  Category?: string;
+  Subcategory?: string;
+  category?: string;
+  subcategory?: string;
+}
+
+// * [POST] Import Categories & Subcategories via CSV
+// ? /api/categories/import
+router.post(
+  '/import',
+  verifyRole(['ADMIN']),
+  upload.single('file'),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      // ! [ERROR] No .csv file uploaded
+      if (!req.file) {
+        console.error("[CSV IMPORT] No file uploaded");
+        return res.status(400).json(errorResponse("CSV file is required"));
+      }
+
+      // [1] Read file content
+      const fileContent = fs.readFileSync(req.file.path, 'utf-8');
+      console.log("[CSV IMPORT] File read successfully");
+
+      // [2] Parse CSV synchronously with comma delimiter
+      const records = parse(fileContent, {
+        columns: true,
+        skip_empty_lines: true,
+        trim: true,
+        delimiter: ',',
+      }) as Record<string, string>[];
+      console.log(`[CSV IMPORT] Parsed ${records.length} records`);
+
+      let createdCategories = 0;
+      let createdSubcategories = 0;
+
+      // [3] Process each record sequentially
+      for (const [index, row] of records.entries()) {
+        console.log(`[CSV IMPORT] Processing row ${index + 1}:`, row);
+
+        // Extract category (column 6) and subcategory (column 7)
+        const categoryName = Object.values(row)[5]?.trim(); // column index 5 = column 6
+        const subcategoryName = Object.values(row)[6]?.trim(); // column index 6 = column 7
+
+        // ! [ERROR] Missing required category
+        if (!categoryName) {
+          console.warn(`[CSV IMPORT] Skipping row ${index + 1}: missing Category`);
+          continue;
+        }
+
+        // ? [WARN] Skip import for already existing category
+        let category = await prisma.category.findUnique({ where: { name: categoryName } });
+        if (!category) {
+          category = await prisma.category.create({ data: { name: categoryName, isActive: true } });
+          console.log(`[CSV IMPORT] Created category: ${categoryName}`);
+          createdCategories++;
+        }
+
+        // Handle subcategory
+        if (subcategoryName) {
+          const existingSub = await prisma.subcategory.findFirst({
+            where: { name: subcategoryName, categoryId: category.id },
+          });
+          if (existingSub) {
+            console.warn(`[CSV IMPORT] Skipping row ${index + 1}: Subcategory "${subcategoryName}" already exists`);
+            continue;
+          }
+
+          await prisma.subcategory.create({
+            data: { name: subcategoryName, categoryId: category.id, isActive: true },
+          });
+          console.log(`[CSV IMPORT] Created subcategory: ${subcategoryName} under category ${categoryName}`);
+          createdSubcategories++;
+        }
+      }
+
+      // [4] Delete uploaded file
+      fs.unlinkSync(req.file.path);
+      console.log("[CSV IMPORT] Deleted uploaded file");
+
+      // * [SUCCESS] Categories & subcategories imported
+      info(`Imported ${createdCategories} categories and ${createdSubcategories} subcategories from CSV`);
+      res.json(
+        successResponse(
+          `Successfully imported ${createdCategories} categories and ${createdSubcategories} subcategories`,
+          { createdCategories, createdSubcategories }
+        )
+      );
+    } catch (err: unknown) {
+      let errorMessage = "Error importing categories CSV";
+      if (err instanceof Error) errorMessage = err.message;
+
+      console.error(`[CSV IMPORT] CSV import error: ${errorMessage}`);
+      res.status(500).json(errorResponse(errorMessage));
+      next(err);
+    }
+  }
+);
 
 // * [GET] Get All Categories
 // ? /api/categories/

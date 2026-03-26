@@ -19,6 +19,15 @@ const upload = multer({ dest: 'uploads/' });
 
 const router = Router();
 
+interface CsvUserRow {
+  Name?: string;
+  name?: string;
+  Email?: string;
+  email?: string;
+  Role?: string;
+  role?: string;
+}
+
 // * [POST] Import Users via CSV
 // ? /api/admin/import-users
 router.post('/', verifyRole(['ADMIN']), upload.single('file'), async (req: Request, res: Response, next: NextFunction) => {
@@ -39,7 +48,7 @@ router.post('/', verifyRole(['ADMIN']), upload.single('file'), async (req: Reque
       skip_empty_lines: true,
       trim: true,
       delimiter: ',',
-    });
+    }) as CsvUserRow[];
     console.log(`[CSV IMPORT] Parsed ${records.length} records`);
 
     let createdCount = 0;

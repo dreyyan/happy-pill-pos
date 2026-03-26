@@ -197,8 +197,14 @@ const Header = () => {
                 onClick={closeSidebar}
               />
               <SidebarLink
+                icon="/item-filled-icon.svg"
+                text="Items"
+                to="/cashier/items"
+                onClick={closeSidebar}
+              />
+              <SidebarLink
                 icon="/sales-report-filled-icon.svg"
-                text="Sales"
+                text="Sales Report"
                 to="/cashier/sales-report"
                 onClick={closeSidebar}
               />

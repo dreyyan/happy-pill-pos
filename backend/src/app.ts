@@ -15,6 +15,7 @@ import { reportsRoutes } from './routes/reports';
 import { categoryRoutes } from './routes/categories';
 import { subcategoryRoutes } from './routes/subcategories';
 import { orderRoutes } from './routes/orders';
+import { customerRoutes } from './routes/admin/customers';
 
 const app: Express = express();
 
@@ -43,6 +44,7 @@ app.use('/api/items', itemRoutes);
 app.use('/api/inventory', inventoryRoutes);
 app.use('/api/transactions', transactionRoutes);
 app.use('/api/reports', reportsRoutes);
+app.use('/api/customers', customerRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/subcategories', subcategoryRoutes);
 

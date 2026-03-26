@@ -44,6 +44,7 @@ interface LogForm {
   type: string;
   quantity: string;
   createdById: string;
+  [key: string]: unknown;
 }
 
 // ?[CONSTANTS]
@@ -81,6 +82,7 @@ const AdminInventory = () => {
   // [STATES] Core data
   const [logs, setLogs]       = useState<InventoryLog[]>([]);
   const [loading, setLoading] = useState(true);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [error, setError]     = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -367,7 +369,7 @@ useEffect(() => {
             label: "Select Item",
             type: "text",
             value: itemSearch,
-            onChange: (value) => setItemSearch(value),
+            onChange: (value) => setItemSearch(String(value)),
             render: () => (
               <div className="relative" ref={itemDropdownRef}>
                 <input

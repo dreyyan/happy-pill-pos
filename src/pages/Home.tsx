@@ -6,6 +6,7 @@ import React from "react";
 import PrimaryButton from "../components/PrimaryButton";
 import ImageHeader from "../components/ImageHeader";
 import TrustBadge from "../components/TrustBadge";
+import SecondaryButton from "../components/SecondaryButton";
 
 const Home = () => {
   const navigate = useNavigate();
@@ -16,9 +17,8 @@ const Home = () => {
       <ImageHeader />
 
       {/* [SECTION] Hero Section */}
-      <section className="bg-surface min-h-[calc(100vh-120px)] flex items-center justify-center px-6 py-16">
+      <section className="bg-surface min-h-[calc(100vh-120px)] flex items-center justify-center px-6 py-8">
         <div className="max-w-6xl w-full grid md:grid-cols-2 gap-12 items-center">
-
           {/* [L] Hero Section Header */}
           <div>
             {/* [UI] Hero Title */}
@@ -31,7 +31,7 @@ const Home = () => {
             </h1>
 
             {/* [UI] Hero Description */}
-            <p className="mt-6 text-lg text-text-700">
+            <p className="mt-6 text-label text-text-800">
               Fast. Reliable. Easy to use.  
               Manage orders, inventory, sales, and staff — all in one place.
             </p>
@@ -43,14 +43,10 @@ const Home = () => {
                 text="Admin Login"
                 onClick={() => navigate("/login/admin")}
               />
-
-              {/* [SECONDARY BUTTON] Cashier Login */}
-              <button
+              <SecondaryButton
+                text="Cashier Login"
                 onClick={() => navigate("/login/cashier")}
-                className="px-6 py-3 rounded-md border text-button font-bold text-text-on-primary border-primary-600 text-primary-600 hover:bg-primary-50 transition"
-              >
-                Cashier Login
-              </button>
+              />
             </div>
 
               {/* [SECTION] Trust Badges */}
@@ -77,7 +73,7 @@ const Home = () => {
 
           {/* [R] Hero Visuals */}
           <div className="flex justify-center">
-            <div className="relative bg-gradient-to-tr from-primary-500 to-primary-700 rounded-3xl shadow-2xl p-10 w-full max-w-md">
+            <div className="relative bg-gradient-to-tr from-primary-500 to-primary-700 rounded-xl shadow-2xl p-10 w-full max-w-md">
 
               {/* [UI] Logo */}
               <div className="flex justify-center mb-6">

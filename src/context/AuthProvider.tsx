@@ -18,7 +18,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // 3. Logout > Redirect to login
   useEffect(() => {
     const token = localStorage.getItem("token");
-    if (!token) {
+    const role = localStorage.getItem("role");
+
+    // Show modal only if token is missing and role exists
+    if (!token && role) {
       // Defer setState to next tick
       const id = setTimeout(() => setShowTokenExpiredModal(true), 0);
       return () => clearTimeout(id);

@@ -115,6 +115,7 @@ router.get('/:id', verifyRole(['ADMIN', 'CASHIER']), async (req: Request, res: R
 });
 
 // * [POST] Create Order - Supports tableNumber + firstName + pax
+// ? /api/orders/
 router.post('/', verifyRole(['ADMIN', 'CASHIER']), async (req: Request, res: Response, next: NextFunction) => {
   const { tableNumber, firstName, pax, status = "PENDING", orderItems } = req.body;
 

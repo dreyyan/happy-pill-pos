@@ -58,20 +58,26 @@ router.get('/sales/daily', verifyRole(['ADMIN', 'CASHIER']), async (req: Request
       ORDER BY date ASC
     `;
 
-    // [3] Merge results
+    // [3] Merge results — normalize date keys to ISO string (YYYY-MM-DD) to guarantee map lookup match
     const profitMap = new Map(
-      profitReports.map(p => [p.date, Number(p.totalProfit) || 0])
+      profitReports.map(p => [
+        new Date(p.date).toISOString().split("T")[0],
+        Number(p.totalProfit) || 0,
+      ])
     );
 
-    const result = salesReports.map(r => ({
-      id: new Date(r.date).getTime(),
-      date: r.date,
-      totalSales: Number(r.totalSales) || 0,
-      totalProfit: profitMap.get(r.date) || 0,
-      totalTransactions: Number(r.totalTransactions) || 0,
-      createdAt: r.date,
-      updatedAt: r.date,
-    }));
+    const result = salesReports.map(r => {
+      const dateKey = new Date(r.date).toISOString().split("T")[0];
+      return {
+        id: new Date(r.date).getTime(),
+        date: r.date,
+        totalSales: Number(r.totalSales) || 0,
+        totalProfit: profitMap.get(dateKey) || 0,
+        totalTransactions: Number(r.totalTransactions) || 0,
+        createdAt: r.date,
+        updatedAt: r.date,
+      };
+    });
 
     // * [SUCCESS] Daily sales reports fetched
     info(`Fetched daily sales reports from ${from} to ${to}`);

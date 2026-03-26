@@ -1,19 +1,30 @@
 // [IMPORT] Setup
 import { Router, Request, Response, NextFunction } from 'express';
-import { prisma } from '../lib/prisma';
+import { prisma } from '../../lib/prisma';
+
+// [IMPORT] Routes
+import { profileRoutes } from './profile';
+import { passwordRoutes } from './password';
+import { dashboardRoutes } from './dashboard';
+
 
 // [IMPORT] Helpers
-import { successResponse, errorResponse } from '../utils/response';
-import { error, info } from '../utils/logger';
-import { hashPassword } from '../utils/auth';
+import { successResponse, errorResponse } from '../../utils/response';
+import { error, info } from '../../utils/logger';
+import { hashPassword } from '../../utils/auth';
 
 // [IMPORT] Middleware
-import { verifyRole } from '../middleware/authMiddleware';
+import { verifyRole } from '../../middleware/authMiddleware';
 
 const router = Router();
 
+// * Sub-routes
+router.use('/profile', profileRoutes);
+router.use('/change-password', passwordRoutes);
+router.use('/dashboard', dashboardRoutes);
+
 // * [GET] Get All Cashiers
-// ? /api/cashiers/
+// ? /api/cashier/
 router.get('/', verifyRole(['ADMIN']), async (req: Request, res: Response, next: NextFunction) => {
     try {
         // [1] Fetch all cashiers
@@ -45,7 +56,7 @@ router.get('/', verifyRole(['ADMIN']), async (req: Request, res: Response, next:
 });
 
 // * [GET] Get Single Cashier
-// ? /api/cashiers/:id
+// ? /api/cashier/:id
 router.get('/:id', verifyRole(['ADMIN']), async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
     try {
@@ -82,7 +93,7 @@ router.get('/:id', verifyRole(['ADMIN']), async (req: Request, res: Response, ne
 });
 
 // * [POST] Create Cashier
-// ? /api/cashiers/
+// ? /api/cashier/
 router.post('/', verifyRole(['ADMIN']), async (req: Request, res: Response, next: NextFunction) => {
     const { email, password, firstName, lastName } = req.body;
     try {
@@ -123,7 +134,7 @@ router.post('/', verifyRole(['ADMIN']), async (req: Request, res: Response, next
 });
 
 // * [PUT] Update Cashier
-// ? /api/cashiers/:id
+// ? /api/cashier/:id
 router.put('/:id', verifyRole(['ADMIN']), async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
     const { email, firstName, lastName } = req.body;
@@ -189,7 +200,7 @@ router.put('/:id', verifyRole(['ADMIN']), async (req: Request, res: Response, ne
 });
 
 // * [DELETE] Delete Cashier (Soft)
-// ? /api/cashiers/:id
+// ? /api/cashier/:id
 router.delete('/:id', verifyRole(['ADMIN']), async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
     try {
@@ -228,7 +239,7 @@ router.delete('/:id', verifyRole(['ADMIN']), async (req: Request, res: Response,
 });
 
 // * [DELETE] Delete Cashier (Hard)
-// ? /api/cashiers/:id/hard
+// ? /api/cashier/:id/hard
 router.delete('/:id/hard', verifyRole(['ADMIN']), async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
 
@@ -284,4 +295,4 @@ router.delete('/:id/hard', verifyRole(['ADMIN']), async (req: Request, res: Resp
     }
 });
 
-export const cashiersRoutes = router;
+export const cashierRoutes = router;

@@ -294,7 +294,7 @@ router.put('/:id/void', verifyRole(['ADMIN', 'CASHIER']), async (req: Request, r
     }
 });
 
-// * [DELETE] Delete Transaction (Soft Delete)
+// * [DELETE] Delete Transaction (Soft)
 // ? /api/transactions/:id
 router.delete('/:id', verifyRole(['ADMIN', 'CASHIER']), async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;

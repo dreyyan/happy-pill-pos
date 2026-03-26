@@ -19,6 +19,9 @@ interface JwtPayload {
 export const verifyRole = (allowedRoles: Role[]) =>
 async (req: Request, res: Response, next: NextFunction) => {
     try {
+        // ? Skip preflight requests
+        if (req.method === 'OPTIONS') return next();
+
         // [1] Get token
         const authHeader = req.headers.authorization;
 

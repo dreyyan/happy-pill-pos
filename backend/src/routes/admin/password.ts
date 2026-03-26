@@ -9,13 +9,13 @@ import { error, info } from '../../utils/logger';
 import { hashPassword } from '../../utils/auth';
 
 // [IMPORT] Middleware
-import { verifyAdmin } from '../../middleware/authMiddleware';
+import { verifyRole } from '../../middleware/authMiddleware';
 
 const router = Router();
 
 // * [PUT] Change Current Admin Password
 // ? /api/admin/change-password
-router.put('/', verifyAdmin, async (req: Request, res: Response, next: NextFunction) => {
+router.put('/', verifyRole(['ADMIN']), async (req: Request, res: Response, next: NextFunction) => {
     const { currentPassword, newPassword, confirmPassword } = req.body;
 
     try {

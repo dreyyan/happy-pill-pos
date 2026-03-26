@@ -1,14 +1,13 @@
 // [IMPORT] React & Hooks
 import { useState, useEffect, useCallback, useRef } from "react";
 import React from "react";
+import { useAuth } from "../../context/useAuth";
 
 // [IMPORT] Components
 import Modal from "../../components/Modal";
+import Skeleton from "../../components/Skeleton";
 
-// ─────────────────────────────────────────────────────────────────────────────
 // ?[INTERFACES]
-// ─────────────────────────────────────────────────────────────────────────────
-
 interface TransactionItem {
   id: number;
   itemId: number;
@@ -57,10 +56,7 @@ interface Transaction {
   items: TransactionItem[];
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 // ?[CONSTANTS]
-// ─────────────────────────────────────────────────────────────────────────────
-
 const STATUS_STYLES: Record<string, string> = {
   COMPLETED: "bg-green-100 text-green-700",
   VOIDED:    "bg-red-100 text-red-600",
@@ -80,10 +76,7 @@ const sortLabels: Record<SortOption, string> = {
   "total-desc": "Total ↓",
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
 // ?[HELPERS]
-// ─────────────────────────────────────────────────────────────────────────────
-
 const formatCurrency = (amount: number) =>
   `₱${amount.toLocaleString("en-PH", { minimumFractionDigits: 2 })}`;
 
@@ -93,15 +86,14 @@ const formatDate = (iso: string) =>
     hour: "2-digit", minute: "2-digit",
   });
 
-// ─────────────────────────────────────────────────────────────────────────────
-// [COMPONENT]
-// ─────────────────────────────────────────────────────────────────────────────
-
 const AdminTransactions = () => {
+  const { setShowTokenExpiredModal } = useAuth();
+
   // [STATES] Core data
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading]           = useState(true);
   const [error, setError]               = useState<string | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [submitting, setSubmitting]     = useState(false);
 
   // [STATES] Filter & sort
@@ -123,11 +115,16 @@ const AdminTransactions = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteTarget, setDeleteTarget]       = useState<Transaction | null>(null);
 
+  // [STATES] Modal
+  const [showModal, setShowModal] = useState(false);
+  const [modalTitle, setModalTitle] = useState("");
+  const [modalMessage, setModalMessage] = useState("");
+  const [modalType, setModalType] = useState<"default" | "success" | "error" | "info">("default");
+
   const token   = () => localStorage.getItem("token");
   const apiBase = import.meta.env.VITE_API_BASE_URL;
 
-  // ── Data ─────────────────────────────────────────────────────────────────
-
+  // * [FETCH] Get transactions
   const fetchTransactions = useCallback(async () => {
     try {
       setLoading(true);
@@ -135,7 +132,10 @@ const AdminTransactions = () => {
       const res = await fetch(`${apiBase}/api/transactions/`, {
         headers: { Authorization: `Bearer ${token()}` },
       });
-      if (res.status === 401) { alert("Session expired. Please login again."); return; }
+      if (res.status === 401) {
+        setShowTokenExpiredModal(true);
+        return;
+      }
       const data = await res.json();
       if (!data?.success) throw new Error(data?.message || "Failed to fetch transactions");
       setTransactions(data.data);
@@ -146,12 +146,16 @@ const AdminTransactions = () => {
     }
   }, [apiBase]);
 
+  // * [FETCH] Get single transaction
   const fetchSingleTransaction = async (id: number) => {
     try {
       const res = await fetch(`${apiBase}/api/transactions/${id}`, {
         headers: { Authorization: `Bearer ${token()}` },
       });
-      if (res.status === 401) { alert("Session expired."); return; }
+      if (res.status === 401) {
+        setShowTokenExpiredModal(true);
+        return;
+      }
       const data = await res.json();
       if (!data?.success) throw new Error(data?.message || "Failed to fetch transaction");
       setViewingTxn(data.data);
@@ -162,8 +166,6 @@ const AdminTransactions = () => {
 
   useEffect(() => { fetchTransactions(); }, [fetchTransactions]);
 
-  // ── CRUD ─────────────────────────────────────────────────────────────────
-
   // *[HANDLE] Void transaction
   const handleConfirmVoid = async () => {
     if (!voidTarget) return;
@@ -173,7 +175,10 @@ const AdminTransactions = () => {
         method: "PUT",
         headers: { Authorization: `Bearer ${token()}` },
       });
-      if (res.status === 401) { alert("Session expired."); return; }
+      if (res.status === 401) {
+        setShowTokenExpiredModal(true);
+        return;
+      }
       const data = await res.json();
       if (!data?.success) { alert(data?.message || "Failed to void transaction"); return; }
 
@@ -199,7 +204,10 @@ const AdminTransactions = () => {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token()}` },
       });
-      if (res.status === 401) { alert("Session expired."); return; }
+      if (res.status === 401) {
+        setShowTokenExpiredModal(true);
+        return;
+      }
       const data = await res.json();
       if (!data?.success) { alert(data?.message || "Failed to delete transaction"); return; }
 
@@ -214,8 +222,7 @@ const AdminTransactions = () => {
     }
   };
 
-  // ── Filter + Sort ─────────────────────────────────────────────────────────
-
+  // [FILTER + SORT]
   const displayedTransactions = transactions
     .filter((t) => {
       const q = search.toLowerCase();
@@ -235,14 +242,22 @@ const AdminTransactions = () => {
       }
     });
 
-  // ── Render ────────────────────────────────────────────────────────────────
-
-  if (loading) return <p>Loading transactions...</p>;
-  if (error)   return <p className="text-red-500">{error}</p>;
+  // ? [LOADING STATE]
+  if (loading) return <Skeleton />;
 
   return (
     <div className="py-10 px-4 space-y-4 relative">
-
+      {/* [COMPONENT] Modal */}
+      {showModal && (
+        <Modal
+          isOpen={showModal}
+          onClose={() => setShowModal(false)}
+          onConfirm={() => setShowModal(false)}
+          title={modalTitle}
+          message={modalMessage}
+          type={modalType}
+        />
+      )}
       {/* [MODAL] Confirm Void */}
       {showVoidModal && voidTarget && (
         <Modal
@@ -399,9 +414,9 @@ const AdminTransactions = () => {
         <h1 className="font-bold text-2xl">Transactions</h1>
       </div>
 
-      {/* [SECTION] Search, Status/Method Filter & Sort */}
-      <div className="flex items-center gap-4 mt-4 flex-wrap">
-        <div className="relative flex-1 min-w-48">
+      {/* [SECTION] Search Bar & Filters */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex gap-2 relative flex-1 min-w-48">
           <input
             type="text"
             placeholder="Search receipt # or cashier..."
@@ -410,42 +425,8 @@ const AdminTransactions = () => {
             className="w-full bg-[var(--color-bg-50)] font-roboto rounded-sm py-2 pl-4 pr-3 outline-none focus:ring-2 focus:ring-[var(--color-primary-600)] text-sm"
           />
         </div>
-
-        {/* Status filter pills */}
-        <div className="flex items-center gap-1">
-          {["ALL", "COMPLETED", "VOIDED", "REFUNDED"].map((s) => (
-            <button
-              key={s}
-              onClick={() => setStatusFilter(s)}
-              className={`px-3 py-1.5 rounded-sm text-xs font-roboto font-medium transition-colors border ${
-                statusFilter === s
-                  ? "bg-[var(--color-primary-600)] text-white border-[var(--color-primary-600)]"
-                  : "bg-[var(--color-bg-50)] text-[var(--color-text-700)] border-[var(--color-bg-300)] hover:bg-[var(--color-bg-200)]"
-              }`}
-            >
-              {s === "ALL" ? "All" : s.charAt(0) + s.slice(1).toLowerCase()}
-            </button>
-          ))}
-        </div>
-
-        {/* Method filter pills */}
-        <div className="flex items-center gap-1">
-          {["ALL", "CASH", "GCASH"].map((m) => (
-            <button
-              key={m}
-              onClick={() => setMethodFilter(m)}
-              className={`px-3 py-1.5 rounded-sm text-xs font-roboto font-medium transition-colors border ${
-                methodFilter === m
-                  ? "bg-[var(--color-primary-600)] text-white border-[var(--color-primary-600)]"
-                  : "bg-[var(--color-bg-50)] text-[var(--color-text-700)] border-[var(--color-bg-300)] hover:bg-[var(--color-bg-200)]"
-              }`}
-            >
-              {m === "ALL" ? "All Methods" : m}
-            </button>
-          ))}
-        </div>
-
-        {/* Sort dropdown */}
+        
+        {/* [SECTION] Sort dropdown */}
         <div ref={filterRef} className="relative">
           <button
             onClick={() => setShowSortFilters(!showSortFilters)}
@@ -473,6 +454,40 @@ const AdminTransactions = () => {
               ))}
             </div>
           )}
+        </div>
+
+        {/* [SECTION] Status Filter Pills */}
+        <div className="flex items-center gap-1">
+          {["ALL", "COMPLETED", "VOIDED", "REFUNDED"].map((s) => (
+            <button
+              key={s}
+              onClick={() => setStatusFilter(s)}
+              className={`px-3 py-1.5 rounded-sm text-xs font-roboto font-medium transition-colors border ${
+                statusFilter === s
+                  ? "bg-[var(--color-primary-600)] text-white border-[var(--color-primary-600)]"
+                  : "bg-[var(--color-bg-50)] text-[var(--color-text-700)] border-[var(--color-bg-300)] hover:bg-[var(--color-bg-200)]"
+              }`}
+            >
+              {s === "ALL" ? "All" : s.charAt(0) + s.slice(1).toLowerCase()}
+            </button>
+          ))}
+        </div>
+
+        {/* [SECTION] Method Filter Pills */}
+        <div className="flex w-full items-center gap-1">
+          {["ALL", "CASH", "GCASH"].map((m) => (
+            <button
+              key={m}
+              onClick={() => setMethodFilter(m)}
+              className={`px-3 py-1.5 rounded-sm text-xs font-roboto font-medium transition-colors border ${
+                methodFilter === m
+                  ? "bg-[var(--color-primary-600)] text-white border-[var(--color-primary-600)]"
+                  : "bg-[var(--color-bg-50)] text-[var(--color-text-700)] border-[var(--color-bg-300)] hover:bg-[var(--color-bg-200)]"
+              }`}
+            >
+              {m === "ALL" ? "All Methods" : m}
+            </button>
+          ))}
         </div>
       </div>
 

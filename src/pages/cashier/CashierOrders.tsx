@@ -4,6 +4,7 @@ import { usePageTitle } from "../../hooks/usePageTitle";
 import { useState, useEffect, useCallback, useRef } from "react";
 
 // [IMPORT] Components
+import Modal from "../../components/Modal";
 import Skeleton from "../../components/Skeleton";
 import CrudModal from "../../components/CrudModal";
 import PrimaryButton from "../../components/PrimaryButton";
@@ -73,8 +74,8 @@ const ALL_STATUS_OPTIONS = [
 ];
 
 // ? [GCASH CONFIG] Update these two values to match your GCash account
-const GCASH_NAME   = "Happy-Pill Cafe";   // ← your GCash account name
-const GCASH_NUMBER = "0917 XXX XXXX";     // ← your GCash number
+const GCASH_NAME   = "Happy-Pill Cafe";
+const GCASH_NUMBER = "0917 XXX XXXX";
 
 const token = () => localStorage.getItem("token");
 const apiBase = import.meta.env.VITE_API_BASE_URL;
@@ -93,14 +94,10 @@ const CashierOrders = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [allItems, setAllItems] = useState<ItemForOrder[]>([]);
   const [loading, setLoading] = useState(true);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   // [STATES] Filters
   const [search, setSearch] = useState("");
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [statusFilter, setStatusFilter] = useState("ALL");
   const [sortOption, setSortOption] = useState<SortOption>("date-desc");
   const [showSortFilters, setShowSortFilters] = useState(false);
   const filterRef = useRef<HTMLDivElement>(null);
@@ -134,6 +131,14 @@ const CashierOrders = () => {
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod>("CASH");
   const [pendingStatusUpdate, setPendingStatusUpdate] = useState<Order | null>(null);
 
+  // [STATES] General Modal (Delete confirmation, warnings, success, etc.)
+  const [showModal, setShowModal] = useState(false);
+  const [modalTitle, setModalTitle] = useState("");
+  const [modalMessage, setModalMessage] = useState("");
+  const [modalType, setModalType] = useState<"default" | "success" | "error" | "info" | "warning">("default");
+  const [isCancelable, setIsCancelable] = useState(true);
+  const [pendingDeleteId, setPendingDeleteId] = useState<number | null>(null);
+
   // * [EFFECT] Fetch Orders
   const fetchOrders = useCallback(async () => {
     try {
@@ -144,7 +149,7 @@ const CashierOrders = () => {
       const data = await res.json();
       if (data?.success) setOrders(data.data);
     } catch {
-      setError("Failed to load orders");
+      // Error handled via modal if needed in future
     } finally {
       setLoading(false);
     }
@@ -174,7 +179,11 @@ const CashierOrders = () => {
     if (order) {
       // Edit mode - only allow if not completed
       if (order.status === "COMPLETED") {
-        alert("Completed orders cannot be edited.");
+        setModalTitle("Cannot Edit Order");
+        setModalMessage("Completed orders cannot be edited.");
+        setModalType("warning");
+        setIsCancelable(true);
+        setShowModal(true);
         return;
       }
       setIsEditing(true);
@@ -333,24 +342,47 @@ const CashierOrders = () => {
     }
   };
 
-  // * [HANDLE] Soft Delete
-  const handleDelete = async (id: number) => {
-    if (!confirm("Are you sure you want to delete this order?")) return;
+  // * [HANDLE] Soft Delete using Modal
+  const handleDeleteClick = (id: number) => {
+    setPendingDeleteId(id);
+    setModalTitle("Confirm Delete Order");
+    setModalMessage("Are you sure you want to delete this order? This action cannot be undone.");
+    setModalType("warning");
+    setIsCancelable(true);
+    setShowModal(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!pendingDeleteId) return;
 
     try {
-      const res = await fetch(`${apiBase}/api/orders/${id}`, {
+      setSubmitting(true);
+      const res = await fetch(`${apiBase}/api/orders/${pendingDeleteId}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token()}` },
       });
       const data = await res.json();
+
       if (data?.success) {
-        setOrders((prev) => prev.filter((o) => o.id !== id));
+        setOrders((prev) => prev.filter((o) => o.id !== pendingDeleteId));
+        setModalTitle("Order Deleted");
+        setModalMessage("The order has been successfully deleted.");
+        setModalType("success");
+        setIsCancelable(false);
       } else {
-        alert(data.message || "Failed to delete order");
+        setModalTitle("Delete Failed");
+        setModalMessage(data.message || "Failed to delete order");
+        setModalType("error");
+        setIsCancelable(true);
       }
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    } catch (err) {
-      alert("Something went wrong while deleting the order");
+    } catch {
+      setModalTitle("Error");
+      setModalMessage("Something went wrong while deleting the order");
+      setModalType("error");
+      setIsCancelable(true);
+    } finally {
+      setSubmitting(false);
+      setPendingDeleteId(null);
     }
   };
 
@@ -360,7 +392,11 @@ const CashierOrders = () => {
     const newQty = existing ? existing.quantity + 1 : 1;
 
     if (newQty > item.quantity) {
-      alert(`Not enough stock for "${item.name}". Only ${item.quantity} available.`);
+      setModalTitle("Insufficient Stock");
+      setModalMessage(`Not enough stock for "${item.name}". Only ${item.quantity} available.`);
+      setModalType("warning");
+      setIsCancelable(true);
+      setShowModal(true);
       return;
     }
 
@@ -382,7 +418,11 @@ const CashierOrders = () => {
 
     const item = allItems.find((i) => i.id === itemId);
     if (item && qty > item.quantity) {
-      alert(`Not enough stock! Only ${item.quantity} available.`);
+      setModalTitle("Insufficient Stock");
+      setModalMessage(`Not enough stock! Only ${item.quantity} available.`);
+      setModalType("warning");
+      setIsCancelable(true);
+      setShowModal(true);
       return;
     }
 
@@ -406,7 +446,7 @@ const CashierOrders = () => {
         order.customer.firstName.toLowerCase().includes(q) ||
         order.customer.tableNumber.toString().includes(q) ||
         order.id.toString().includes(q)
-      ) && (statusFilter === "ALL" || order.status === statusFilter) && order.isActive;
+      ) && order.isActive;
     })
     .sort((a, b) => {
       switch (sortOption) {
@@ -433,6 +473,22 @@ const CashierOrders = () => {
 
   return (
     <div className="py-10 px-4 space-y-4">
+      {/* General Modal - used for delete confirmation, stock warnings, success/error messages */}
+      <Modal
+        isOpen={showModal}
+        onClose={() => {
+          setShowModal(false);
+          if (modalType === "success") {
+            setPendingDeleteId(null);
+          }
+        }}
+        title={modalTitle}
+        message={modalMessage}
+        type={modalType}
+        isCancelable={isCancelable}
+        onConfirm={modalType === "warning" && pendingDeleteId !== null ? confirmDelete : undefined}
+      />
+
       {/* [CRUD MODAL] Unified Create / Edit Modal */}
       <CrudModal<CreateOrderForm>
         isOpen={showCreateModal}
@@ -625,7 +681,7 @@ const CashierOrders = () => {
               {selectedPaymentMethod === "GCASH" && (
                 <div className="border-2 border-[#007DFF]/30 bg-[#F0F7FF] rounded-xl p-4 flex flex-col items-center gap-3">
 
-                  {/* QR Code placeholder — replace with <img src="/gcash-qr.png"> once you have the real QR */}
+                  {/* QR Code placeholder — replace with real QR when available */}
                   <div className="bg-white rounded-lg p-3 shadow-sm border border-[#007DFF]/20">
                     <img src="/gcash-qr.jpg" alt="GCash QR Code" className="w-40 h-40 object-contain" />
                   </div>
@@ -788,7 +844,7 @@ const CashierOrders = () => {
                       </button>
                     )}
                     <button
-                      onClick={() => handleDelete(order.id)}
+                      onClick={() => handleDeleteClick(order.id)}
                       className="flex-1 py-2 text-sm border border-red-500 text-red-600 rounded-lg hover:bg-red-50"
                     >
                       Delete
@@ -845,7 +901,7 @@ const CashierOrders = () => {
                           src="/delete-icon.svg"
                           alt="Delete"
                           className="w-5 h-5 cursor-pointer hover:opacity-80"
-                          onClick={() => handleDelete(order.id)}
+                          onClick={() => handleDeleteClick(order.id)}
                         />
                       </td>
                     </tr>

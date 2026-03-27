@@ -141,35 +141,35 @@ const AdminDashboard = () => {
       {/* [SECTION] Dashboard Buttons */}
       <div className="grid grid-cols-2 gap-6 px-4">
         <DashboardButton
-          iconSrc="/cashier-icon.svg"
-          text="Cashiers"
+          iconSrc="/orders-icon.svg"
+          text="Orders"
           colorFrom="#3B82F6"
           colorTo="#1D4ED8"
-          to={"/admin/cashiers"}
-        />
-
-        <DashboardButton
-          iconSrc="/item-icon.svg"
-          text="Items"
-          colorFrom="#8B5CF6"
-          colorTo="#6D28D9"
-          to={"/admin/items"}
+          to={"/admin/orders"}
         />
 
         <DashboardButton
           iconSrc="/transaction-icon.svg"
           text="Transactions"
-          colorFrom="#F59E0B"
-          colorTo="#B45309"
+          colorFrom="#10B981"
+          colorTo="#047857"
           to={"/admin/transactions"}
         />
 
         <DashboardButton
           iconSrc="/inventory-icon.svg"
           text="Inventory"
-          colorFrom="#10B981"
-          colorTo="#047857"
+          colorFrom="#F59E0B"
+          colorTo="#B45309"
           to={"/admin/inventory"}
+        />
+
+        <DashboardButton
+          iconSrc="/sales-report-icon.svg"
+          text="Sales Report"
+          colorFrom="#8B5CF6"
+          colorTo="#6D28D9"
+          to={"/admin/sales-report"}
         />
       </div>
     </div>

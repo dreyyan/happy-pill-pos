@@ -21,7 +21,11 @@ const app: Express = express();
 
 // [MIDDLEWARE] CORS
 app.use(cors({
-  origin: process.env.FRONTEND_URL,
+    origin: [
+      "http://192.168.1.33:5173",
+      "http://192.168.1.38:5173",
+      "http://localhost:5173"
+    ],
   credentials: true,
 }));
 

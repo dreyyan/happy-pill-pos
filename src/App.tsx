@@ -31,6 +31,7 @@ import Layout from "./Layout";
 import CashierSalesReport from "./pages/cashier/CashierSalesReport";
 import CashierInventory from "./pages/cashier/CashierInventory";
 import CashierItems from "./pages/cashier/CashierItems";
+import CashierSettings from "./pages/cashier/CashierSettings";
 
 function App() {
   return (
@@ -179,6 +180,14 @@ function App() {
           element={
             <PrivateRoute>
               <CashierProfile />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/cashier/settings"
+          element={
+            <PrivateRoute>
+              <CashierSettings />
             </PrivateRoute>
           }
         />

@@ -2,15 +2,17 @@
 import React from "react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { usePageTitle } from "../../hooks/usePageTitle";
 
 // [IMPORT] Components
+import Modal from "../../components/Modal";
+import InputField from "../../components/InputField";
 import ImageHeader from "../../components/ImageHeader";
 import PrimaryButton from "../../components/PrimaryButton";
-import InputField from "../../components/InputField";
-import Modal from "../../components/Modal";
 
 const AdminLogin = () => {
   const navigate = useNavigate();
+  usePageTitle("Admin Login | Happy-Pill Cafe");
 
   // [STATES] Form
   const [email, setEmail] = useState("");

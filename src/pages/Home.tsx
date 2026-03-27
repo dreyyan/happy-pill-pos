@@ -1,6 +1,7 @@
 // [IMPORT] Hooks
-import { useNavigate } from "react-router-dom";
 import React from "react";
+import { useNavigate } from "react-router-dom";
+import { usePageTitle } from "../hooks/usePageTitle";
 
 // [IMPORT] Components
 import PrimaryButton from "../components/PrimaryButton";
@@ -10,6 +11,7 @@ import SecondaryButton from "../components/SecondaryButton";
 
 const Home = () => {
   const navigate = useNavigate();
+  usePageTitle("Happy-Pill Cafe | Smart P.O.S.");
 
   return (
     <div>

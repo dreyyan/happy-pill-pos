@@ -1,12 +1,13 @@
 // [IMPORT] React & Hooks
-import { useState, useEffect, useCallback, useRef } from "react";
 import React from "react";
+import { usePageTitle } from "../../hooks/usePageTitle";
+import { useState, useEffect, useCallback, useRef } from "react";
 
 // [IMPORT] Components
-import PrimaryButton from "../../components/PrimaryButton";
-import CrudModal from "../../components/CrudModal";
 import Modal from "../../components/Modal";
 import Skeleton from "../../components/Skeleton";
+import CrudModal from "../../components/CrudModal";
+import PrimaryButton from "../../components/PrimaryButton";
 
 // ?[INTERFACES]
 interface InventoryItem {
@@ -79,6 +80,7 @@ const formatDate = (iso: string) =>
 const emptyForm = (): LogForm => ({ itemId: "", type: "STOCK_IN", quantity: "", createdById: "" });
 
 const AdminInventory = () => {
+  usePageTitle("Inventory: Admin | Happy-Pill Cafe");
   // [STATES] Core data
   const [logs, setLogs]       = useState<InventoryLog[]>([]);
   const [loading, setLoading] = useState(true);

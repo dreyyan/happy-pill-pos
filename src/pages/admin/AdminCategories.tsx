@@ -2,12 +2,13 @@
 import React from "react";
 import { useState, useEffect } from "react";
 import { useAuth } from "../../context/useAuth";
+import { usePageTitle } from "../../hooks/usePageTitle";
 
 // [IMPORT] Components
-import PrimaryButton from "../../components/PrimaryButton";
-import CrudModal from "../../components/CrudModal";
 import Modal from "../../components/Modal";
 import Skeleton from "../../components/Skeleton";
+import CrudModal from "../../components/CrudModal";
+import PrimaryButton from "../../components/PrimaryButton";
 
 // ? [INTERFACES]
 interface Subcategory {
@@ -46,6 +47,7 @@ const colorPalette = [
 
 const AdminCategories = () => {
   const { setShowTokenExpiredModal } = useAuth();
+  usePageTitle("Categories: Admin | Happy-Pill Cafe");
 
   // [STATES]
   const [categories, setCategories] = useState<Category[]>([]);

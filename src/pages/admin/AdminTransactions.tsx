@@ -1,11 +1,13 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 // [IMPORT] React & Hooks
-import { useState, useEffect, useCallback, useRef } from "react";
 import React from "react";
 import { useAuth } from "../../context/useAuth";
+import { useState, useEffect, useCallback, useRef } from "react";
 
 // [IMPORT] Components
 import Modal from "../../components/Modal";
 import Skeleton from "../../components/Skeleton";
+import { usePageTitle } from "../../hooks/usePageTitle";
 
 // ?[INTERFACES]
 interface TransactionItem {
@@ -88,12 +90,12 @@ const formatDate = (iso: string) =>
 
 const AdminTransactions = () => {
   const { setShowTokenExpiredModal } = useAuth();
+  usePageTitle("Transactions: Admin | Happy-Pill Cafe");
 
   // [STATES] Core data
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading]           = useState(true);
   const [error, setError]               = useState<string | null>(null);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [submitting, setSubmitting]     = useState(false);
 
   // [STATES] Filter & sort

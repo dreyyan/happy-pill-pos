@@ -2,6 +2,7 @@
 import React from "react";
 import { useState, useEffect } from "react";
 import { useAuth } from "../../context/useAuth";
+import { usePageTitle } from "../../hooks/usePageTitle";
 
 // [IMPORT] Components
 import Modal from "../../components/Modal";
@@ -31,6 +32,7 @@ interface AdminForm {
 
 const AdminProfile = () => {
   const { setShowTokenExpiredModal } = useAuth();
+  usePageTitle("Profile: Admin | Happy-Pill Cafe");
 
   // [STATES] Profile
   // eslint-disable-next-line @typescript-eslint/no-unused-vars

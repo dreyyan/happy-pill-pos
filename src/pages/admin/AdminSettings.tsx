@@ -2,6 +2,7 @@
 import React from "react";
 import { useState, useEffect } from "react";
 import { useAuth } from "../../context/useAuth";
+import { usePageTitle } from "../../hooks/usePageTitle";
 
 // [IMPORT] Components
 import Modal from "../../components/Modal";
@@ -18,6 +19,7 @@ interface SettingsForm {
 
 const AdminSettings = () => {
   const { setShowTokenExpiredModal } = useAuth();
+  usePageTitle("Settings: Admin | Happy-Pill Cafe");
 
   // [STATES] CSV Profile
   const [loading, setLoading] = useState(true);

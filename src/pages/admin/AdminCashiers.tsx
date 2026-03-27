@@ -1,15 +1,15 @@
 // [IMPORT] Hooks
-import { useState, useEffect, useRef } from "react";
-import { useAuth } from "../../context/useAuth";
 import React from "react";
+import { useAuth } from "../../context/useAuth";
+import { useState, useEffect, useRef } from "react";
+import { usePageTitle } from "../../hooks/usePageTitle";
 
 // [IMPORT] Components
-import PrimaryButton from "../../components/PrimaryButton";
-import CrudModal from "../../components/CrudModal";
 import Modal from "../../components/Modal";
+import CrudModal from "../../components/CrudModal";
+import PrimaryButton from "../../components/PrimaryButton";
 
-// ─── Interfaces ───────────────────────────────────────────────────────────────
-
+//  ? [INTERFACES]
 interface CashierUser {
   id: number;
   email: string;
@@ -42,12 +42,12 @@ const sortLabels: Record<SortOption, string> = {
   "email-desc": "Email ↓",
 };
 
-// ─── Component ────────────────────────────────────────────────────────────────
 
 const AdminCashiers = () => {
   const { setShowTokenExpiredModal } = useAuth();
+  usePageTitle("Cashiers: Admin | Happy-Pill Cafe");
 
-  // ── State ──────────────────────────────────────────────────────────────────
+  // [STATES]
   const [cashiers, setCashiers] = useState<CashierData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

@@ -1,9 +1,12 @@
+// [IMPORT] React & Hooks
+import React from "react";
 import { useState, useEffect, useCallback, useRef } from "react";
 
-import PrimaryButton from "../../components/PrimaryButton";
-import CrudModal from "../../components/CrudModal";
-import React from "react";
+// [IMPORT] Components
 import Skeleton from "../../components/Skeleton";
+import CrudModal from "../../components/CrudModal";
+import { usePageTitle } from "../../hooks/usePageTitle";
+import PrimaryButton from "../../components/PrimaryButton";
 
 // ? [INTERFACES]
 interface Order {
@@ -79,6 +82,8 @@ const sortLabels: Record<SortOption, string> = {
 };
 
 const AdminOrders = () => {
+  usePageTitle("Orders: Admin | Happy-Pill Cafe");
+
   // [STATES] Orders & Items
   const [orders, setOrders] = useState<Order[]>([]);
   const [allItems, setAllItems] = useState<ItemForOrder[]>([]);

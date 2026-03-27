@@ -1,15 +1,17 @@
-// [IMPORT] Hooks
-import { useState, useEffect, useRef } from "react";
+// [IMPORT] React & Hooks
 import { useAuth } from "../../context/useAuth";
+import { useState, useEffect, useRef } from "react";
+import { usePageTitle } from "../../hooks/usePageTitle";
 
 // [IMPORT] Components
-import PrimaryButton from "../../components/PrimaryButton";
-import CrudModal from "../../components/CrudModal";
-import Modal from "../../components/Modal";
 import React from "react";
+import Modal from "../../components/Modal";
+import CrudModal from "../../components/CrudModal";
+import PrimaryButton from "../../components/PrimaryButton";
 
 const AdminItems = () => {
   const { setShowTokenExpiredModal } = useAuth();
+  usePageTitle("Items: Admin | Happy-Pill Cafe");
 
   // [STATES] Items & Loading
   const [items, setItems] = useState<Item[]>([]);

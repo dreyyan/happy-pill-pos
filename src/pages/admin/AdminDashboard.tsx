@@ -6,9 +6,10 @@ import { useAuth } from "../../context/useAuth";
 
 // [IMPORT] Components
 import Modal from "../../components/Modal";
-import DashboardButton from "../../components/DashboardButton";
-import DashboardItem from "../../components/DashboardItem";
 import Skeleton from "../../components/Skeleton";
+import DashboardItem from "../../components/DashboardItem";
+import DashboardButton from "../../components/DashboardButton";
+import { usePageTitle } from "../../hooks/usePageTitle";
 
 // ? [INTERFACES]
 interface Profile {
@@ -26,8 +27,9 @@ interface DashboardSummary {
 }
 
 const AdminDashboard = () => {
-  const { setShowTokenExpiredModal } = useAuth();
   const navigate = useNavigate();
+  const { setShowTokenExpiredModal } = useAuth();
+  usePageTitle("Dashboard: Admin | Happy-Pill Cafe");
 
   // [STATE] Profile
   const [profile, setProfile] = useState<Profile | null>(null);

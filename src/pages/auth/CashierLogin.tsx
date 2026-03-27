@@ -1,16 +1,18 @@
 // [IMPORT] Hooks
+import React from "react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 // [IMPORT] Components
-import InputField from "../../components/InputField";
-import PrimaryButton from "../../components/PrimaryButton";
 import Modal from "../../components/Modal";
-import React from "react";
+import InputField from "../../components/InputField";
 import ImageHeader from "../../components/ImageHeader";
+import { usePageTitle } from "../../hooks/usePageTitle";
+import PrimaryButton from "../../components/PrimaryButton";
 
 const CashierLogin = () => {
   const navigate = useNavigate();
+  usePageTitle("Cashier Login | Happy-Pill Cafe");
 
   // [STATES]
   const [email, setEmail] = useState("");

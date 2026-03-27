@@ -242,7 +242,12 @@ const AdminSettings = () => {
 
           {/* [PRIMARY BUTTON] Update Password */}
           <div className="pt-2">
-            <PrimaryButton text="Update Password" color="059669" onClick={handleSave} />
+              <button
+                  onClick={handleSave}
+                  className="flex justify-center items-center gap-x-2 w-full py-3 rounded-md cursor-pointer text-button font-bold bg-green-600 text-text-50 transition-all duration-200 hover:bg-green-700 disabled:opacity-50"
+              >   
+                  <p className="button text-text-on-primary">Update Password</p>
+              </button>
           </div>
         </div>
       </div>

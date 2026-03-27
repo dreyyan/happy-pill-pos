@@ -1,11 +1,12 @@
 // [IMPORT] React & Hooks
-import { useState, useEffect, useCallback, useRef } from "react";
 import React from "react";
-import Skeleton from "../../components/Skeleton";
+import { usePageTitle } from "../../hooks/usePageTitle";
+import { useState, useEffect, useCallback, useRef } from "react";
 
 // [IMPORT] Components
-import PrimaryButton from "../../components/PrimaryButton";
+import Skeleton from "../../components/Skeleton";
 import CrudModal from "../../components/CrudModal";
+import PrimaryButton from "../../components/PrimaryButton";
 
 // ? [INTERFACES]
 interface Order {
@@ -81,6 +82,8 @@ const sortLabels: Record<SortOption, string> = {
 };
 
 const CashierOrders = () => {
+  usePageTitle("Orders: Cashier | Happy-Pill Cafe");
+
   // [STATES] Orders & Items
   const [orders, setOrders] = useState<Order[]>([]);
   const [allItems, setAllItems] = useState<ItemForOrder[]>([]);

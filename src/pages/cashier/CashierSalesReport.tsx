@@ -1,6 +1,7 @@
 // [IMPORT] React & Hooks
-import { useState, useEffect, useCallback } from "react";
 import React from "react";
+import { usePageTitle } from "../../hooks/usePageTitle";
+import { useState, useEffect, useCallback } from "react";
 
 // [IMPORT] Recharts
 import {
@@ -315,6 +316,8 @@ const ReportTable = ({ reports }: { reports: SalesReport[] }) => (
 );
 
 const CashierSalesReport = () => {
+  usePageTitle("Sales Report: Cashier | Happy-Pill Cafe");
+
   // [STATES] Core data
   const [reports, setReports] = useState<SalesReport[]>([]);
   const [loading, setLoading] = useState(true);

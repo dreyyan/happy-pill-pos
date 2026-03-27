@@ -1,13 +1,14 @@
 // CashierDashboard.tsx
-import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/useAuth";
+import React, { useState, useEffect } from "react";
+import { usePageTitle } from "../../hooks/usePageTitle";
 
 // Components
 import Modal from "../../components/Modal";
-import DashboardButton from "../../components/DashboardButton";
-import DashboardItem from "../../components/DashboardItem";
 import Skeleton from "../../components/Skeleton";
+import DashboardItem from "../../components/DashboardItem";
+import DashboardButton from "../../components/DashboardButton";
 
 // Interfaces
 interface Profile {
@@ -24,8 +25,9 @@ interface DashboardSummary {
 }
 
 const CashierDashboard = () => {
-  const { setShowTokenExpiredModal } = useAuth();
   const navigate = useNavigate();
+  const { setShowTokenExpiredModal } = useAuth();
+  usePageTitle("Dashboard: Cashier | Happy-Pill Cafe");
 
   // Profile & Loading
   const [profile, setProfile] = useState<Profile | null>(null);

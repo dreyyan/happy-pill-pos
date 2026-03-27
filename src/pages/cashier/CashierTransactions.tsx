@@ -1,7 +1,8 @@
 // [IMPORT] React & Hooks
-import { useState, useEffect, useCallback, useRef } from "react";
 import React from "react";
 import { useAuth } from "../../context/useAuth";
+import { usePageTitle } from "../../hooks/usePageTitle";
+import { useState, useEffect, useCallback, useRef } from "react";
 
 // [IMPORT] Components
 import Modal from "../../components/Modal";
@@ -88,6 +89,7 @@ const formatDate = (iso: string) =>
 
 const CashierTransactions = () => {
   const { setShowTokenExpiredModal } = useAuth();
+  usePageTitle("Transactions: Cashier | Happy-Pill Cafe");
 
   // [STATES] Core data
   const [transactions, setTransactions] = useState<Transaction[]>([]);

@@ -1,13 +1,15 @@
 // [IMPORT] Hooks
-import { useState, useEffect, useRef } from "react";
+import React from "react";
 import { useAuth } from "../../context/useAuth";
+import { useState, useEffect, useRef } from "react";
 
 // [IMPORT] Components
 import Modal from "../../components/Modal";
-import React from "react";
+import { usePageTitle } from "../../hooks/usePageTitle";
 
 const CashierItems = () => {
   const { setShowTokenExpiredModal } = useAuth();
+  usePageTitle("Items: Cashier | Happy-Pill Cafe");
 
   // [STATES] Items & Loading
   const [items, setItems] = useState<Item[]>([]);

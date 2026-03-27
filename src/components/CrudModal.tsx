@@ -28,7 +28,8 @@ interface CrudModalProps<T extends Record<string, unknown>> {
   loading?: boolean;
 
   formData?: T;
-  setFormData?: (updater: (prev: T) => T) => void;
+  // [FIX] Accept both functional updater and direct setter from React.useState
+  setFormData?: React.Dispatch<React.SetStateAction<T>>;
   showForm?: boolean;
 
   formError?: string;
@@ -36,7 +37,10 @@ interface CrudModalProps<T extends Record<string, unknown>> {
 
   formFields?: FormField<T>[];
 
-  children?: React.ReactNode;   // ← ADD THIS
+  // [FIX] Allow caller to override the confirm button label
+  confirmLabel?: string;
+
+  children?: React.ReactNode;
 }
 
 function CrudModal<T extends Record<string, unknown>>({
@@ -56,6 +60,8 @@ function CrudModal<T extends Record<string, unknown>>({
 
   formFields = [],
 
+  confirmLabel,
+
   children,
 }: CrudModalProps<T>) {
   if (!isOpen) return null;
@@ -70,8 +76,19 @@ function CrudModal<T extends Record<string, unknown>>({
   const handleFieldChange = (key: keyof T, type: string, rawValue: string) => {
     if (!setFormData) return;
     const val: unknown = type === "number" ? Number(rawValue) : rawValue;
+    // [FIX] Use functional updater so state always reflects the latest value
     setFormData((prev) => ({ ...prev, [key]: val } as T));
   };
+
+  // [FIX] Derive a sensible confirm label instead of hardcoding "Create Order"
+  const resolvedConfirmLabel = confirmLabel
+    ?? (loading
+      ? "Processing..."
+      : title.toLowerCase().includes("delete")
+        ? "Confirm"
+        : title.toLowerCase().includes("update") || title.toLowerCase().includes("edit")
+          ? "Update"
+          : "Confirm");
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
@@ -156,13 +173,13 @@ function CrudModal<T extends Record<string, unknown>>({
           <button
             onClick={handleConfirm}
             disabled={isDisabled}
-            className={`px-5 py-2 rounded-lg font-roboto text-white transition-colors text-sm ${
-              title.includes("Delete")
+            className={`px-5 py-2 rounded-lg font-roboto text-white transition-colors text-sm disabled:opacity-60 ${
+              title.toLowerCase().includes("delete")
                 ? "bg-red-500 hover:bg-red-600"
                 : "bg-[var(--color-primary-500)] hover:bg-[var(--color-primary-600)]"
             }`}
           >
-            {loading ? "Processing..." : title.includes("Delete") ? "Confirm" : "Create Order"}
+            {resolvedConfirmLabel}
           </button>
         </div>
       </div>

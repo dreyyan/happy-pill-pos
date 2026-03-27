@@ -218,7 +218,7 @@ router.post('/', verifyRole(['ADMIN', 'CASHIER']), async (req: Request, res: Res
 // * [PUT] Update Order Status → When COMPLETED, create Transaction + update SalesReport
 router.put('/:id', verifyRole(['ADMIN', 'CASHIER']), async (req: Request, res: Response, next: NextFunction) => {
   const { id } = req.params;
-  const { status } = req.body;
+  const { status, paymentMethod } = req.body;
 
   // ! [ERROR] Missing status
   if (!status) {
@@ -226,6 +226,16 @@ router.put('/:id', verifyRole(['ADMIN', 'CASHIER']), async (req: Request, res: R
   }
 
   const newStatus = status.toUpperCase();
+
+  // [VALIDATE] Payment method when completing an order
+  const VALID_PAYMENT_METHODS = ["CASH", "GCASH"];
+  const resolvedPaymentMethod = paymentMethod
+    ? String(paymentMethod).toUpperCase()
+    : "CASH";
+
+  if (newStatus === "COMPLETED" && !VALID_PAYMENT_METHODS.includes(resolvedPaymentMethod)) {
+    return res.status(400).json(errorResponse(`Invalid payment method. Must be one of: ${VALID_PAYMENT_METHODS.join(", ")}`));
+  }
 
   try {
     // [1] Update order status
@@ -269,7 +279,7 @@ router.put('/:id', verifyRole(['ADMIN', 'CASHIER']), async (req: Request, res: R
 
         const totalAmount = order.totalAmount;
 
-        // [4.2] Create Transaction
+        // [4.2] Create Transaction — use the cashier-selected payment method
         const transaction = await tx.transaction.create({
           data: {
             receiptNumber: `ORD-${order.id}-${Date.now()}`,
@@ -277,7 +287,8 @@ router.put('/:id', verifyRole(['ADMIN', 'CASHIER']), async (req: Request, res: R
             totalAmount,
             cashReceived: totalAmount,
             changeGiven: 0,
-            paymentMethod: "CASH",
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            paymentMethod: resolvedPaymentMethod as any,
             status: "COMPLETED",
           }
         });
@@ -311,30 +322,6 @@ router.put('/:id', verifyRole(['ADMIN', 'CASHIER']), async (req: Request, res: R
         const profit = order.orderItems.reduce((sum, oi) => {
           return sum + (oi.priceAtOrder - (oi.costAtOrder ?? oi.item.cost ?? 0)) * oi.quantity;
         }, 0);
-
-        // // [DEBUG] Profit check — remove after confirming
-        // console.log("Order items profit breakdown:");
-        // order.orderItems.forEach(oi => {
-        //   console.log({
-        //     item: oi.itemName,
-        //     priceAtOrder: oi.priceAtOrder,
-        //     costAtOrder: oi.costAtOrder,
-        //     itemCost: oi.item.cost,
-        //     quantity: oi.quantity,
-        //     lineProfit: (oi.priceAtOrder - (oi.costAtOrder ?? oi.item.cost ?? 0)) * oi.quantity,
-        //   });
-        // });
-        // console.log("Total profit:", profit);
-        // console.log("Total sales:", totalAmount);
-
-        // // [DEBUG] — remove after confirming
-        // console.log("Today UTC:", today.toISOString());
-        // console.log("Today getTime:", today.getTime());
-
-        // const existing = await tx.salesReport.findFirst({
-        //   where: { date: today }
-        // });
-        // console.log("Existing report found:", existing);
 
         // [4.6] Create sales report
         await tx.salesReport.upsert({

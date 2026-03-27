@@ -42,6 +42,7 @@ interface ItemForOrder {
 }
 
 type SortOption = "date-desc" | "date-asc" | "amount-desc" | "amount-asc";
+type PaymentMethod = "CASH" | "GCASH";
 
 // ? [CONSTANTS]
 const STATUS_STYLES: Record<string, string> = {
@@ -70,6 +71,10 @@ const ALL_STATUS_OPTIONS = [
   { label: "Completed", value: "COMPLETED" },
   { label: "Cancelled", value: "CANCELLED" },
 ];
+
+// ? [GCASH CONFIG] Update these two values to match your GCash account
+const GCASH_NAME   = "Happy-Pill Cafe";   // ← your GCash account name
+const GCASH_NUMBER = "0917 XXX XXXX";     // ← your GCash number
 
 const token = () => localStorage.getItem("token");
 const apiBase = import.meta.env.VITE_API_BASE_URL;
@@ -123,6 +128,11 @@ const CashierOrders = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingOrder, setEditingOrder] = useState<Order | null>(null);
   const [editFormData, setEditFormData] = useState({ status: "PENDING" });
+
+  // [STATES] Payment Method Modal
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod>("CASH");
+  const [pendingStatusUpdate, setPendingStatusUpdate] = useState<Order | null>(null);
 
   // * [EFFECT] Fetch Orders
   const fetchOrders = useCallback(async () => {
@@ -195,6 +205,14 @@ const CashierOrders = () => {
     setShowCreateModal(true);
   };
 
+  // [HANDLE] Open Quick Status Edit Modal
+  const openStatusModal = (order: Order) => {
+    setEditingOrder(order);
+    setEditFormData({ status: order.status });
+    setFormError("");
+    setShowEditModal(true);
+  };
+
   // * [HANDLE] Save Order (Create or Update)
   const handleSaveOrder = async () => {
     setFormError("");
@@ -256,17 +274,47 @@ const CashierOrders = () => {
     }
   };
 
-  // * [HANDLE] Update Status (Quick)
+  // * [HANDLE] Update Status (Quick) — intercepts COMPLETED to show payment modal
   const handleUpdateStatus = async () => {
     if (!editingOrder) return;
     setFormError("");
 
+    // [INTERCEPT] If setting to COMPLETED, show payment method modal first
+    if (editFormData.status === "COMPLETED") {
+      setPendingStatusUpdate(editingOrder);
+      setSelectedPaymentMethod("CASH");
+      setShowEditModal(false);
+      setShowPaymentModal(true);
+      return;
+    }
+
+    // [NORMAL] Any other status — update directly
+    await submitStatusUpdate(editingOrder.id, editFormData.status, undefined);
+  };
+
+  // * [HANDLE] Confirm payment method and complete the order
+  const handleConfirmPayment = async () => {
+    if (!pendingStatusUpdate) return;
+    await submitStatusUpdate(pendingStatusUpdate.id, "COMPLETED", selectedPaymentMethod);
+    setShowPaymentModal(false);
+    setPendingStatusUpdate(null);
+  };
+
+  // * [INTERNAL] Shared status update submission
+  const submitStatusUpdate = async (
+    orderId: number,
+    status: string,
+    paymentMethod?: PaymentMethod
+  ) => {
     try {
       setSubmitting(true);
-      const res = await fetch(`${apiBase}/api/orders/${editingOrder.id}`, {
+      const body: Record<string, unknown> = { status };
+      if (paymentMethod) body.paymentMethod = paymentMethod;
+
+      const res = await fetch(`${apiBase}/api/orders/${orderId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token()}` },
-        body: JSON.stringify({ status: editFormData.status }),
+        body: JSON.stringify(body),
       });
 
       const data = await res.json();
@@ -275,7 +323,7 @@ const CashierOrders = () => {
         return;
       }
 
-      setOrders((prev) => prev.map((o) => (o.id === editingOrder.id ? data.data : o)));
+      setOrders((prev) => prev.map((o) => (o.id === orderId ? data.data : o)));
       setShowEditModal(false);
       setEditingOrder(null);
     } catch {
@@ -514,6 +562,122 @@ const CashierOrders = () => {
         ]}
       />
 
+      {/* [MODAL] Payment Method — shown when completing an order */}
+      {showPaymentModal && pendingStatusUpdate && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden">
+
+            {/* Header */}
+            <div className="bg-[var(--color-primary-600)] px-6 py-4">
+              <h2 className="text-white font-figtree font-bold text-lg">Select Payment Method</h2>
+              <p className="text-white/80 text-sm mt-0.5 font-roboto">
+                Order #{pendingStatusUpdate.id} — Table {pendingStatusUpdate.customer.tableNumber}
+              </p>
+            </div>
+
+            {/* Body */}
+            <div className="px-6 py-6 space-y-4">
+
+              {/* Order total summary */}
+              <div className="flex justify-between items-center bg-[var(--color-bg-50)] rounded-lg px-4 py-3">
+                <span className="text-sm font-roboto text-[var(--color-text-500)]">Total Amount</span>
+                <span className="font-bold text-lg font-figtree text-[var(--color-text-900)]">
+                  ₱{pendingStatusUpdate.totalAmount.toFixed(2)}
+                </span>
+              </div>
+
+              {/* Payment method selector */}
+              <div className="grid grid-cols-2 gap-3">
+                {/* CASH option */}
+                <button
+                  onClick={() => setSelectedPaymentMethod("CASH")}
+                  className={`flex flex-col items-center justify-center gap-2 py-5 rounded-xl border-2 transition-all cursor-pointer ${
+                    selectedPaymentMethod === "CASH"
+                      ? "border-[var(--color-primary-600)] bg-[var(--color-primary-50)] text-[var(--color-primary-700)]"
+                      : "border-[var(--color-bg-300)] bg-white text-[var(--color-text-600)] hover:border-[var(--color-primary-300)] hover:bg-[var(--color-bg-50)]"
+                  }`}
+                >
+                  <span className="text-2xl">💵</span>
+                  <span className="font-semibold font-roboto text-sm">Cash</span>
+                  {selectedPaymentMethod === "CASH" && (
+                    <span className="text-xs font-roboto text-[var(--color-primary-600)]">Selected</span>
+                  )}
+                </button>
+
+                {/* GCASH option */}
+                <button
+                  onClick={() => setSelectedPaymentMethod("GCASH")}
+                  className={`flex flex-col items-center justify-center gap-2 py-5 rounded-xl border-2 transition-all cursor-pointer ${
+                    selectedPaymentMethod === "GCASH"
+                      ? "border-[var(--color-primary-600)] bg-[var(--color-primary-50)] text-[var(--color-primary-700)]"
+                      : "border-[var(--color-bg-300)] bg-white text-[var(--color-text-600)] hover:border-[var(--color-primary-300)] hover:bg-[var(--color-bg-50)]"
+                  }`}
+                >
+                  <span className="text-2xl">📱</span>
+                  <span className="font-semibold font-roboto text-sm">GCash</span>
+                  {selectedPaymentMethod === "GCASH" && (
+                    <span className="text-xs font-roboto text-[var(--color-primary-600)]">Selected</span>
+                  )}
+                </button>
+              </div>
+
+              {/* [GCASH PANEL] Show QR + details when GCash is selected */}
+              {selectedPaymentMethod === "GCASH" && (
+                <div className="border-2 border-[#007DFF]/30 bg-[#F0F7FF] rounded-xl p-4 flex flex-col items-center gap-3">
+
+                  {/* QR Code placeholder — replace with <img src="/gcash-qr.png"> once you have the real QR */}
+                  <div className="bg-white rounded-lg p-3 shadow-sm border border-[#007DFF]/20">
+                    <img src="/gcash-qr.jpg" alt="GCash QR Code" className="w-40 h-40 object-contain" />
+                  </div>
+
+                  {/* GCash account info */}
+                  <div className="text-center space-y-0.5">
+                    <p className="font-figtree font-bold text-[#007DFF] text-base">{GCASH_NAME}</p>
+                    <p className="font-roboto text-sm text-[var(--color-text-500)]">{GCASH_NUMBER}</p>
+                  </div>
+
+                  {/* Amount to send */}
+                  <div className="bg-white rounded-lg px-5 py-2 border border-[#007DFF]/20 text-center w-full">
+                    <p className="text-xs font-roboto text-[var(--color-text-500)] mb-0.5">Amount to send</p>
+                    <p className="font-figtree font-bold text-xl text-[var(--color-text-900)]">
+                      ₱{pendingStatusUpdate.totalAmount.toFixed(2)}
+                    </p>
+                  </div>
+
+                </div>
+              )}
+
+              {formError && (
+                <p className="text-sm text-red-600 font-roboto text-center">{formError}</p>
+              )}
+            </div>
+
+            {/* Footer actions */}
+            <div className="px-6 pb-6 flex gap-3">
+              <button
+                onClick={() => {
+                  setShowPaymentModal(false);
+                  setPendingStatusUpdate(null);
+                  setFormError("");
+                  setShowEditModal(true);
+                }}
+                disabled={submitting}
+                className="flex-1 py-2.5 rounded-lg border border-[var(--color-bg-300)] text-[var(--color-text-600)] font-roboto text-sm hover:bg-[var(--color-bg-50)] transition disabled:opacity-50 cursor-pointer"
+              >
+                Back
+              </button>
+              <button
+                onClick={handleConfirmPayment}
+                disabled={submitting}
+                className="flex-1 py-2.5 rounded-lg bg-[var(--color-primary-600)] text-white font-roboto font-semibold text-sm hover:bg-[var(--color-primary-700)] transition disabled:opacity-50 cursor-pointer"
+              >
+                {submitting ? "Processing..." : "Complete Order"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* [SECTION] Header */}
       <div className="flex flex-col justify-between items-center">
         <h1 className="font-bold text-2xl">Customer Orders</h1>
@@ -617,10 +781,10 @@ const CashierOrders = () => {
                   <div className="mt-4 flex gap-3">
                     {order.status !== "COMPLETED" && (
                       <button
-                        onClick={() => openOrderModal(order)}
+                        onClick={() => openStatusModal(order)}
                         className="flex-1 py-2 text-sm border border-[var(--color-primary-600)] text-[var(--color-primary-600)] rounded-lg hover:bg-[var(--color-primary-50)]"
                       >
-                        Edit Order
+                        Update Status
                       </button>
                     )}
                     <button
@@ -671,9 +835,10 @@ const CashierOrders = () => {
                         {order.status !== "COMPLETED" && (
                           <img
                             src="/edit-icon.svg"
-                            alt="Edit"
+                            alt="Update Status"
+                            title="Update Status"
                             className="w-5 h-5 cursor-pointer hover:opacity-80"
-                            onClick={() => openOrderModal(order)}
+                            onClick={() => openStatusModal(order)}
                           />
                         )}
                         <img

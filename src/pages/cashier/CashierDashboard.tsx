@@ -18,10 +18,10 @@ interface Profile {
 
 interface DashboardSummary {
   cashierProfile: Profile;
-  totalOrders: number;
+  totalOrdersToday: number;
   totalTransactions: number;
-  totalSalesToday: number;
-  totalItemsSold: number;
+  salesToday: number;
+  itemsSoldToday: number;
 }
 
 const CashierDashboard = () => {
@@ -75,10 +75,10 @@ const CashierDashboard = () => {
 
         // Safely set state with fallbacks
         setProfile(summary.cashierProfile ?? { name: "Cashier", email: "" });
-        setTotalOrders(summary.totalOrders ?? 0);
+        setTotalOrders(summary.totalOrdersToday ?? 0);
         setTotalTransactions(summary.totalTransactions ?? 0);
-        setTotalSalesToday(summary.totalSalesToday ?? 0);
-        setTotalItemsSold(summary.totalItemsSold ?? 0);
+        setTotalSalesToday(summary.salesToday ?? 0);
+        setTotalItemsSold(summary.itemsSoldToday ?? 0);
       } catch (err) {
         console.error("Failed to fetch dashboard:", err);
         localStorage.removeItem("token");

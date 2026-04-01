@@ -7,6 +7,7 @@ import { passwordRoutes } from './password';
 import { userRoutes } from './users';
 import { importRoutes } from './import';
 import { dashboardRoutes } from './dashboard';
+import { configRoutes } from './config';
 
 const router = Router();
 
@@ -16,5 +17,6 @@ router.use('/change-password', passwordRoutes);
 router.use('/users', userRoutes);
 router.use('/import-users', importRoutes);
 router.use('/dashboard', dashboardRoutes);
+router.use('/config', configRoutes);
 
 export const adminRoutes = router;

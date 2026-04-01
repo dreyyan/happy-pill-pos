@@ -80,6 +80,20 @@ model Admin {
   id     Int  @id @default(autoincrement())
   userId Int  @unique
   user   User @relation(fields: [userId], references: [id])
+  config AdminConfig?
+}
+
+model AdminConfig {
+  id         Int    @id @default(autoincrement())
+  adminId    Int    @unique
+  admin      Admin  @relation(fields: [adminId], references: [id])
+  businessName String @default("")
+  themeColor String @default("#ffffff")
+  logo       String @default("coffee") // preset options: coffee, restaurant, business, etc.
+
+  // ? Metadata
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 }
 
 model Category {

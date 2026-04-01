@@ -16,35 +16,52 @@ const router = Router();
 // ? /api/admin/config/first-time
 router.get('/first-time', async (req, res) => {
   const adminConfig = await prisma.adminConfig.findFirst();
-  if (!adminConfig) return res.json(successResponse("No admin config found", null));
-  return res.json(successResponse("Config exists", { exists: true }));
+  
+  if (!adminConfig) {
+    // No config → first-time setup
+    return res.json(successResponse("No admin config found", null));
+  }
+
+  // Config exists → return all info needed for frontend (without auth)
+  return res.json(successResponse("Config exists", {
+    exists: true,
+    businessName: adminConfig.businessName,
+    themeColor: adminConfig.themeColor,
+    logo: adminConfig.logo
+  }));
 });
 
 // * [GET] Fetch Current Admin Config
 // ? /api/admin/config
-router.get('/', verifyRole(['ADMIN']), async (req: Request, res: Response, next: NextFunction) => {
+router.get("/", async (req: Request, res: Response, next: NextFunction) => {
   try {
-    // [1] Try fetching any existing admin config
     const adminConfig = await prisma.adminConfig.findFirst({
       include: { admin: true },
     });
 
-    // ! [FIRST-TIME SETUP] No config found → allow onboarding
+    // ! [FIRST-TIME SETUP] No config → allow onboarding
     if (!adminConfig) {
       return res.json(successResponse("No admin config found", null));
     }
 
-    // [2] If config exists, check auth
+    // [1] Get token from headers
+    const authHeader = req.headers.authorization;
+    if (!authHeader?.startsWith("Bearer ")) {
+      return res.status(401).json(errorResponse("Unauthorized: No token provided"));
+    }
+
+    const token = authHeader.split(" ")[1];
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const currentUserId = (req as any).user?.userId;
+    const decoded: any = verifyToken(token);
+    const currentUserId = decoded?.userId;
 
     if (!currentUserId || currentUserId !== adminConfig.adminId) {
-      return res.status(401).json(errorResponse("Unauthorized: No valid token provided"));
+      return res.status(401).json(errorResponse("Unauthorized: Invalid token"));
     }
 
     // * [SUCCESS] Config fetched
     info(`Admin config fetched for user id ${currentUserId}`);
-    res.json(successResponse("Admin config fetched successfully", adminConfig));
+    res.json(successResponse("[SUCCESS] Admin config fetched successfully", adminConfig));
   } catch (err: unknown) {
     let errorMessage = "An unexpected error occurred while fetching admin config";
     if (err instanceof Error) errorMessage = err.message;

@@ -17,6 +17,7 @@ import AdminCashiers from "./pages/admin/AdminCashiers";
 import AdminSalesReport from "./pages/admin/AdminSalesReport";
 import AdminProfile from "./pages/admin/AdminProfile";
 import AdminSettings from "./pages/admin/AdminSettings";
+import AdminOnboarding from "./pages/admin/AdminOnboarding";
 
 // [IMPORT] Pages: Cashier
 import CashierLogin from "./pages/auth/CashierLogin";
@@ -41,6 +42,9 @@ function App() {
       {/* Authentication */}
       <Route path="/login/admin" element={<AdminLogin />} />
       <Route path="/login/cashier" element={<CashierLogin />} />
+
+      {/* Onboarding */}
+      <Route path="/admin/onboarding" element={<AdminOnboarding />} />
 
       {/* Protected Routes */}
       <Route element={<Layout />}>

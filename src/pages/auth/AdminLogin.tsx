@@ -9,6 +9,9 @@ import InputField from "../../components/InputField";
 import ImageHeader from "../../components/ImageHeader";
 import PrimaryButton from "../../components/PrimaryButton";
 
+// [IMPORT] Helpers
+import { adjustThemeColor } from "../../utils/helpers";
+
 const AdminLogin = () => {
   const navigate = useNavigate();
 
@@ -19,6 +22,7 @@ const AdminLogin = () => {
 
   // [STATES] Config
   const [businessName, setBusinessName] = useState("POS System");
+  const [themeColor, setThemeColor] = useState("#000000");
   const [loadingConfig, setLoadingConfig] = useState(true);
 
   // [STATES] Modal
@@ -41,15 +45,17 @@ const AdminLogin = () => {
           return;
         }
 
-        const { exists, businessName, themeColor, logo } = data.data;
+        const { exists, businessName, themeColor } = data.data;
 
         if (!exists) {
           navigate("/admin/onboarding");
           return;
         }
 
-        // Config exists → set business name
+        
+        // Config exists, set values (use defaults if missing)
         setBusinessName(businessName || "POS System");
+        setThemeColor(themeColor);
 
       } catch (err) {
         console.error("Error fetching admin config:", err);
@@ -154,7 +160,7 @@ const AdminLogin = () => {
   return (
     <div className="min-h-screen flex flex-col bg-surface">
       {/* [COMPONENT] Image Header */}
-      <ImageHeader />
+      <ImageHeader themeColor={adjustThemeColor(themeColor)} businessName={businessName} />
 
       {/* [CONTENT] Page Body */}
       <div className="flex flex-1 items-center justify-center px-4 py-8 sm:px-6 lg:px-8">
@@ -216,14 +222,15 @@ const AdminLogin = () => {
 
             <a
               href={`/forgot-password?role=admin`}
-              className="text-caption text-primary-800 hover:underline"
+              style={{ color: (adjustThemeColor(themeColor)) }}
+              className="text-caption hover:underline"
             >
               Forgot Password?
             </a>
           </div>
 
           {/* [PRIMARY BUTTON] Login */}
-          <PrimaryButton text="Login" onClick={handleLogin} />
+          <PrimaryButton text="Login" onClick={handleLogin} color={adjustThemeColor(themeColor)} />
 
           {/* [SECTION] Navigate > Cashier Login */}
           <div className="flex justify-center mt-5">
@@ -231,7 +238,8 @@ const AdminLogin = () => {
               Not an Admin?{" "}
               <a
                 href="/login/cashier"
-                className="link text-primary-600 hover:underline"
+                style={{ color: (adjustThemeColor(themeColor)) }}
+                className="link hover:underline"
               >
                 Login as Cashier
               </a>

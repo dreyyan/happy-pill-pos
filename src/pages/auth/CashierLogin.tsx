@@ -1,31 +1,36 @@
 // [IMPORT] Hooks
-import React, { useEffect } from "react";
-import { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { usePageTitle } from "../../hooks/usePageTitle";
 
 // [IMPORT] Components
 import Modal from "../../components/Modal";
 import InputField from "../../components/InputField";
 import ImageHeader from "../../components/ImageHeader";
-import { usePageTitle } from "../../hooks/usePageTitle";
 import PrimaryButton from "../../components/PrimaryButton";
 
-const CashierLogin = () => {
+// [IMPORT] Helpers
+import { adjustThemeColor, getContrastColor } from "../../utils/helpers";
+
+const CashierLogin: React.FC = () => {
   const navigate = useNavigate();
 
-  // [STATES]
+  // [STATES] Form
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(false);
+
+  // [STATES] Config
+  const [businessName, setBusinessName] = useState("POS System");
+  const [themeColor, setThemeColor] = useState("#000000");
+  const [loadingConfig, setLoadingConfig] = useState(true);
+
+  // [STATES] Modal
   const [showModal, setShowModal] = useState(false);
   const [modalTitle, setModalTitle] = useState("");
   const [modalMessage, setModalMessage] = useState("");
   const [isCancelable, setIsCancelable] = useState(true);
   const [redirectOnConfirm, setRedirectOnConfirm] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
-
-  // [STATES] Config
-  const [businessName, setBusinessName] = useState("POS System");
-  const [loadingConfig, setLoadingConfig] = useState(true);
 
   // * [EFFECT] Fetch config for Cashier login
   useEffect(() => {
@@ -34,43 +39,36 @@ const CashierLogin = () => {
         const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/admin/config/first-time`);
         const data = await res.json();
 
-        // If fetch fails, show default values but **don’t redirect to onboarding**
         if (!res.ok || !data.success || !data.data) {
           console.warn("Failed to fetch config, using defaults");
           setBusinessName("POS System");
           return;
         }
 
-        const { exists, businessName, themeColor, logo } = data.data;
+        const { exists, businessName, themeColor } = data.data;
 
-        // Config exists → set business name
-        if (exists) {
-          setBusinessName(businessName || "POS System");
-        } else {
-          // Config does not exist → **cashier cannot edit onboarding**
-          // Just show default name, no redirect
-          setBusinessName("POS System");
-        }
+        setBusinessName(exists ? businessName || "POS System" : "POS System");
+        setThemeColor(themeColor || "#000000");
 
       } catch (err) {
         console.error("Error fetching admin config:", err);
-        // Don't redirect, just use default
         setBusinessName("POS System");
+        setThemeColor("#000000");
       } finally {
         setLoadingConfig(false);
       }
     };
 
     fetchConfig();
-  }, [navigate]);
+  }, []);
 
   // * [UPDATE PAGE TITLE]
   usePageTitle(`Cashier Login | ${businessName}`);
 
-  // [HANDLE] Login cashier
+  // * [HANDLE] Login cashier
   const handleLogin = async () => {
     // ! [ERROR] Empty email
-    if (email.trim() === "") {
+    if (!email.trim()) {
       setModalTitle("Email required");
       setModalMessage("Please enter your email to continue.");
       setIsCancelable(false);
@@ -79,7 +77,7 @@ const CashierLogin = () => {
       return;
     }
 
-    // ! [ERROR] Invalid email
+    // ! [ERROR] Invalid email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       setModalTitle("Invalid Email");
@@ -100,23 +98,12 @@ const CashierLogin = () => {
       return;
     }
 
-    const payload = {
-      email,
-      password,
-      rememberMe,
-    };
-
-    const token = localStorage.getItem("token");
-
     try {
-      // [REQUEST] Send login request to backend
       const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/auth/cashier/login`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
-        },
-        body: JSON.stringify(payload),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password, rememberMe }),
+        credentials: "include",
       });
 
       const data = await res.json();
@@ -124,7 +111,9 @@ const CashierLogin = () => {
       // ! [ERROR] Login failed
       if (!res.ok || !data.success) {
         setModalTitle("Login unsuccessful");
-        setModalMessage("We couldn't log you in. Please check your email and password and try again.");
+        setModalMessage(
+          "We couldn't log you in. Please check your email and password and try again."
+        );
         setIsCancelable(false);
         setRedirectOnConfirm(false);
         setShowModal(true);
@@ -136,16 +125,19 @@ const CashierLogin = () => {
       localStorage.setItem("role", "Cashier");
 
       setModalTitle("Login successful");
-      setModalMessage("You have successfully signed in. Redirecting you to your dashboard...");
+      setModalMessage(
+        "You have successfully signed in. Redirecting you to your dashboard..."
+      );
       setIsCancelable(false);
       setRedirectOnConfirm(true);
       setShowModal(true);
 
     } catch (err) {
-      // ! [ERROR] Network or server issue
       console.error(err);
       setModalTitle("Login unsuccessful");
-      setModalMessage("Something went wrong while trying to sign you in. Please check your internet connection and try again.");
+      setModalMessage(
+        "Something went wrong while trying to sign you in. Please check your internet connection and try again."
+      );
       setIsCancelable(false);
       setRedirectOnConfirm(false);
       setShowModal(true);
@@ -161,10 +153,14 @@ const CashierLogin = () => {
     );
   }
 
+  // * [ADJUSTED COLORS]
+  const adjustedColor = adjustThemeColor(themeColor);
+  const textColor = getContrastColor(adjustedColor);
+
   return (
     <div className="min-h-screen flex flex-col bg-surface">
       {/* [COMPONENT] Image Header */}
-      <ImageHeader />
+      <ImageHeader themeColor={adjustedColor} businessName={businessName} />
 
       {/* [CONTENT] Page Body */}
       <div className="flex flex-1 items-center justify-center px-4 py-8 sm:px-6 lg:px-8">
@@ -225,15 +221,16 @@ const CashierLogin = () => {
             </label>
 
             <a
-              href={`/forgot-password?role=admin`}
-              className="text-caption text-primary-800 hover:underline"
+              href={`/forgot-password?role=cashier`}
+              style={{ color: textColor }}
+              className="text-caption hover:underline"
             >
               Forgot Password?
             </a>
           </div>
 
           {/* [PRIMARY BUTTON] Login */}
-          <PrimaryButton text="Login" onClick={handleLogin} />
+          <PrimaryButton text="Login" onClick={handleLogin} color={adjustedColor} />
 
           {/* [SECTION] Navigate > Admin Login */}
           <div className="flex justify-center mt-5">
@@ -241,7 +238,8 @@ const CashierLogin = () => {
               Not a Cashier?{" "}
               <a
                 href="/login/admin"
-                className="link text-primary-600 hover:underline"
+                style={{ color: adjustedColor }}
+                className="link hover:underline"
               >
                 Login as Admin
               </a>

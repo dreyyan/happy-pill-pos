@@ -56,6 +56,7 @@ router.get('/', verifyRole(['ADMIN']), async (req: Request, res: Response, next:
 });
 
 // * [POST] Create or Update Admin Config
+// ? /api/admin/config
 router.post('/', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { businessName, themeColor, logo } = req.body;

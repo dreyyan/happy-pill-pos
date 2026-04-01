@@ -20,4 +20,16 @@ const generateToken = (payload: TokenPayload, expiresIn: StringValue | number = 
     return jwt.sign(payload, JWT_SECRET as jwt.Secret, options);
 }
 
-export { hashPassword, generateToken };
+// ? [HELPER] Generate JWT
+const verifyToken = (token: string): TokenPayload => {
+    try {
+        const decoded = jwt.verify(token, JWT_SECRET as jwt.Secret) as TokenPayload;
+        return decoded;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    } catch (err) {
+        throw new Error('Invalid or expired token');
+    }
+}
+
+
+export { hashPassword, generateToken, verifyToken };

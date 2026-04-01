@@ -5,6 +5,7 @@ import { prisma } from '../../lib/prisma';
 // [IMPORT] Helpers
 import { successResponse, errorResponse } from '../../utils/response';
 import { error, info } from '../../utils/logger';
+import { verifyToken } from '../../utils/auth';
 
 // [IMPORT] Middleware
 import { verifyRole } from '../../middleware/authMiddleware';
@@ -21,7 +22,7 @@ router.get('/first-time', async (req, res) => {
 
 // * [GET] Fetch Current Admin Config
 // ? /api/admin/config
-router.get('/', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/', verifyRole(['ADMIN']), async (req: Request, res: Response, next: NextFunction) => {
   try {
     // [1] Try fetching any existing admin config
     const adminConfig = await prisma.adminConfig.findFirst({
@@ -64,27 +65,38 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
 
     // [2] First-time setup → create config without token
     if (!existingConfig) {
-      // TODO: optionally create default Admin user here
-      const admin = await prisma.admin.findFirst(); // or create default admin record if needed
+      // Get any existing admin or create default
+      const admin = await prisma.admin.findFirst();
 
       if (!admin) {
         return res.status(400).json(errorResponse("Cannot create config: No admin exists"));
       }
 
+      // Create new config
       const newConfig = await prisma.adminConfig.create({
         data: {
           adminId: admin.id,
+          businessName,
           themeColor,
           logo,
         },
       });
 
+      info(`Admin config created for user id ${admin.id}`);
       return res.json(successResponse("Admin config created successfully", newConfig));
     }
 
     // [3] If config exists → require token auth
+    // Use verifyRole middleware logic manually to allow token check here
+    const authHeader = req.headers.authorization;
+    if (!authHeader?.startsWith("Bearer ")) {
+      return res.status(401).json(errorResponse("Unauthorized: No token provided"));
+    }
+
+    const token = authHeader.split(" ")[1];
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const currentUserId = (req as any).user?.userId;
+    const decoded: any = verifyToken(token);
+    const currentUserId = decoded?.userId;
 
     if (!currentUserId || currentUserId !== existingConfig.adminId) {
       return res.status(401).json(errorResponse("Unauthorized: Invalid token"));
@@ -93,11 +105,11 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
     // [4] Update config
     const updatedConfig = await prisma.adminConfig.update({
       where: { adminId: currentUserId },
-      data: { themeColor, logo },
+      data: { businessName, themeColor, logo },
     });
 
+    info(`Admin config updated for user id ${currentUserId}`);
     res.json(successResponse("Admin config updated successfully", updatedConfig));
-
   } catch (err: unknown) {
     let errorMessage = "An unexpected error occurred while saving admin config";
     if (err instanceof Error) errorMessage = err.message;

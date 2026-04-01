@@ -11,7 +11,6 @@ import PrimaryButton from "../../components/PrimaryButton";
 
 const AdminItems = () => {
   const { setShowTokenExpiredModal } = useAuth();
-  usePageTitle("Items: Admin | Happy-Pill Cafe");
 
   // [STATES] Items & Loading
   const [items, setItems] = useState<Item[]>([]);
@@ -67,6 +66,38 @@ const AdminItems = () => {
   };
   const [formData, setFormData] = useState(initialForm);
   const selectedCategory = categories.find((c) => c.id === formData.categoryId);
+
+  // [STATES] Config
+  const [businessName, setBusinessName] = useState("POS System");
+
+  // * [EFFECT] Fetch config from backend
+  useEffect(() => {
+    const fetchConfig = async () => {
+      try {
+        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/admin/config/first-time`);
+        const data = await res.json();
+
+        // If response is not OK or missing data → do nothing
+        if (!res.ok || !data.success || !data.data) return;
+
+        const { exists, businessName: fetchedName } = data.data;
+
+        // If config does not exist → do nothing
+        if (!exists) return;
+
+        // Set business name, fallback to default
+        setBusinessName(fetchedName || "POS System");
+
+      } catch (err) {
+        console.error("Error fetching admin config:", err);
+      }
+    };
+
+    fetchConfig();
+  }, []); // no need for navigate here, unless you redirect inside
+
+  // * [UPDATE PAGE TITLE]
+  usePageTitle(`Items: Admin | ${businessName}`);
 
   // [TYPES] Sort options
   type SortOption = 

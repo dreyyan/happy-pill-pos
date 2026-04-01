@@ -34,6 +34,38 @@ const CashierSettings = () => {
   const [modalMessage, setModalMessage] = useState("");
   const [modalType, setModalType] = useState<"default" | "success" | "error" | "info">("default");
 
+  // [STATES] Config
+  const [businessName, setBusinessName] = useState("POS System");
+
+  // * [EFFECT] Fetch config from backend
+  useEffect(() => {
+    const fetchConfig = async () => {
+      try {
+        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/admin/config/first-time`);
+        const data = await res.json();
+
+        // If response is not OK or missing data → do nothing
+        if (!res.ok || !data.success || !data.data) return;
+
+        const { exists, businessName: fetchedName } = data.data;
+
+        // If config does not exist → do nothing
+        if (!exists) return;
+
+        // Set business name, fallback to default
+        setBusinessName(fetchedName || "POS System");
+
+      } catch (err) {
+        console.error("Error fetching admin config:", err);
+      }
+    };
+
+    fetchConfig();
+  }, []); // no need for navigate here, unless you redirect inside
+
+  // * [UPDATE PAGE TITLE]
+  usePageTitle(`Settings: Cashier | ${businessName}`);
+
   // * [EFFECT] Reset loading
   useEffect(() => setLoading(false), []);
 

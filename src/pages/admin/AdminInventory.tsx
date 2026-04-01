@@ -80,7 +80,6 @@ const formatDate = (iso: string) =>
 const emptyForm = (): LogForm => ({ itemId: "", type: "STOCK_IN", quantity: "", createdById: "" });
 
 const AdminInventory = () => {
-  usePageTitle("Inventory: Admin | Happy-Pill Cafe");
   // [STATES] Core data
   const [logs, setLogs]       = useState<InventoryLog[]>([]);
   const [loading, setLoading] = useState(true);
@@ -122,17 +121,49 @@ const AdminInventory = () => {
   const [showItemDropdown, setShowItemDropdown] = useState(false);
   const itemDropdownRef = useRef<HTMLDivElement>(null);
 
-// [EFFECT] Close item dropdown on outside click
-useEffect(() => {
-  const handleClickOutside = (event: MouseEvent) => {
-    if (itemDropdownRef.current && !itemDropdownRef.current.contains(event.target as Node)) {
-      setShowItemDropdown(false);
-    }
-  };
+  // [STATES] Config
+  const [businessName, setBusinessName] = useState("POS System");
 
-  document.addEventListener("mousedown", handleClickOutside);
-  return () => document.removeEventListener("mousedown", handleClickOutside);
-}, []);
+  // * [EFFECT] Fetch config from backend
+  useEffect(() => {
+    const fetchConfig = async () => {
+      try {
+        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/admin/config/first-time`);
+        const data = await res.json();
+
+        // If response is not OK or missing data → do nothing
+        if (!res.ok || !data.success || !data.data) return;
+
+        const { exists, businessName: fetchedName } = data.data;
+
+        // If config does not exist → do nothing
+        if (!exists) return;
+
+        // Set business name, fallback to default
+        setBusinessName(fetchedName || "POS System");
+
+      } catch (err) {
+        console.error("Error fetching admin config:", err);
+      }
+    };
+
+    fetchConfig();
+  }, []); // no need for navigate here, unless you redirect inside
+
+  // * [UPDATE PAGE TITLE]
+  usePageTitle(`Inventory: Admin | ${businessName}`);
+
+  // [EFFECT] Close item dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (itemDropdownRef.current && !itemDropdownRef.current.contains(event.target as Node)) {
+        setShowItemDropdown(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   // * [EFFECT] Fetch All Inventory Items
   useEffect(() => {

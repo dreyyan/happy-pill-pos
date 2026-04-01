@@ -49,6 +49,41 @@ const AdminDashboard = () => {
   const [isCancelable] = useState(true);
   const [redirectOnConfirm] = useState(false);
 
+  // [STATES] Config
+  const [businessName, setBusinessName] = useState("POS System");
+
+  // * [EFFECT] Fetch config from backend
+  useEffect(() => {
+    const fetchConfig = async () => {
+      try {
+        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/admin/config/first-time`);
+        const data = await res.json();
+
+        // No config → onboarding
+        if (!res.ok || !data.success || !data.data) {
+          return;
+        }
+
+        const { exists, businessName } = data.data;
+
+        if (!exists) {
+          return;
+        }
+
+        // Config exists, set values (use defaults if missing)
+        setBusinessName(businessName || "POS System");
+
+      } catch (err) {
+        console.error("Error fetching admin config:", err);
+      }
+    };
+
+    fetchConfig();
+  }, [navigate]); 
+
+  // * [UPDATE PAGE TITLE]
+  usePageTitle(`Dashboard: Admin | ${businessName}`);
+
   // * [EFFECT] Fetch dashboard summary
   useEffect(() => {
     const token = localStorage.getItem("token");

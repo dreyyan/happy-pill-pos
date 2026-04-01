@@ -37,22 +37,20 @@ const Header = () => {
     navigate(`/login/${role.toLowerCase()}`);
   };
 
-  // * [EFFECT] Fetch profile and app config on mount
+  // * [EFFECT] Fetch business config and profile on mount
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) return;
 
     const fetchConfigAndProfile = async () => {
       try {
-        // ? Fetch config
-        const configRes = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/admin/config`, {
-          headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-        });
+        // ? Fetch public config for business name & logo (safe for all roles)
+        const configRes = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/admin/config/first-time`);
         if (configRes.ok) {
           const configData = await configRes.json();
-          if (configData.success && configData.data) {
-            if (configData.data.businessName) setBusinessName(configData.data.businessName);
-            if (configData.data.logo) setLogo(configData.data.logo);
+          if (configData.success && configData.data?.exists) {
+            setBusinessName(configData.data.businessName || "POS System");
+            setLogo(configData.data.logo || "🍴");
           }
         }
 

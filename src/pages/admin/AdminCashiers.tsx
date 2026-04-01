@@ -3,6 +3,7 @@ import React from "react";
 import { useAuth } from "../../context/useAuth";
 import { useState, useEffect, useRef } from "react";
 import { usePageTitle } from "../../hooks/usePageTitle";
+import { useNavigate } from "react-router-dom";
 
 // [IMPORT] Components
 import Modal from "../../components/Modal";
@@ -45,7 +46,7 @@ const sortLabels: Record<SortOption, string> = {
 
 const AdminCashiers = () => {
   const { setShowTokenExpiredModal } = useAuth();
-  usePageTitle("Cashiers: Admin | Happy-Pill Cafe");
+  const navigate = useNavigate();
 
   // [STATES]
   const [cashiers, setCashiers] = useState<CashierData[]>([]);
@@ -78,7 +79,37 @@ const AdminCashiers = () => {
   const apiBase = import.meta.env.VITE_API_BASE_URL;
   const token = () => localStorage.getItem("token");
 
-  // ── Data ───────────────────────────────────────────────────────────────────
+  // [STATES] Config
+  const [businessName, setBusinessName] = useState("POS System");
+
+  // * [EFFECT] Fetch config from backend
+  useEffect(() => {
+    const fetchConfig = async () => {
+      try {
+        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/admin/config/first-time`);
+        const data = await res.json();
+
+        // If response is not OK or missing data → do nothing
+        if (!res.ok || !data.success || !data.data) return;
+
+        const { exists, businessName: fetchedName } = data.data;
+
+        // If config does not exist → do nothing
+        if (!exists) return;
+
+        // Set business name, fallback to default
+        setBusinessName(fetchedName || "POS System");
+
+      } catch (err) {
+        console.error("Error fetching admin config:", err);
+      }
+    };
+
+    fetchConfig();
+  }, []); // no need for navigate here, unless you redirect inside
+
+  // * [UPDATE PAGE TITLE]
+  usePageTitle(`Cashiers: Admin | ${businessName}`);
 
   // *[EFFECT] Fetch all cashiers
   useEffect(() => {
@@ -114,7 +145,7 @@ const AdminCashiers = () => {
     };
 
     fetchCashiers();
-  }, [setShowTokenExpiredModal]);
+  }, []);
 
   // ── CRUD ───────────────────────────────────────────────────────────────────
 

@@ -9,9 +9,6 @@ import InputField from "../../components/InputField";
 import ImageHeader from "../../components/ImageHeader";
 import PrimaryButton from "../../components/PrimaryButton";
 
-// [IMPORT] Helpers
-import { adjustThemeColor } from "../../utils/helpers";
-
 const AdminLogin = () => {
   const navigate = useNavigate();
 

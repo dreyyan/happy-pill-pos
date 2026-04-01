@@ -1,5 +1,5 @@
 // [IMPORT] Hooks
-import React from "react";
+import React, { useEffect } from "react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -12,7 +12,6 @@ import PrimaryButton from "../../components/PrimaryButton";
 
 const CashierLogin = () => {
   const navigate = useNavigate();
-  usePageTitle("Cashier Login | Happy-Pill Cafe");
 
   // [STATES]
   const [email, setEmail] = useState("");
@@ -24,8 +23,52 @@ const CashierLogin = () => {
   const [redirectOnConfirm, setRedirectOnConfirm] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
 
-// [HANDLE] Login cashier
-const handleLogin = async () => {
+  // [STATES] Config
+  const [businessName, setBusinessName] = useState("POS System");
+  const [loadingConfig, setLoadingConfig] = useState(true);
+
+  // * [EFFECT] Fetch config for Cashier login
+  useEffect(() => {
+    const fetchConfig = async () => {
+      try {
+        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/admin/config/first-time`);
+        const data = await res.json();
+
+        // If fetch fails, show default values but **don’t redirect to onboarding**
+        if (!res.ok || !data.success || !data.data) {
+          console.warn("Failed to fetch config, using defaults");
+          setBusinessName("POS System");
+          return;
+        }
+
+        const { exists, businessName, themeColor, logo } = data.data;
+
+        // Config exists → set business name
+        if (exists) {
+          setBusinessName(businessName || "POS System");
+        } else {
+          // Config does not exist → **cashier cannot edit onboarding**
+          // Just show default name, no redirect
+          setBusinessName("POS System");
+        }
+
+      } catch (err) {
+        console.error("Error fetching admin config:", err);
+        // Don't redirect, just use default
+        setBusinessName("POS System");
+      } finally {
+        setLoadingConfig(false);
+      }
+    };
+
+    fetchConfig();
+  }, [navigate]);
+
+  // * [UPDATE PAGE TITLE]
+  usePageTitle(`Cashier Login | ${businessName}`);
+
+  // [HANDLE] Login cashier
+  const handleLogin = async () => {
     // ! [ERROR] Empty email
     if (email.trim() === "") {
       setModalTitle("Email required");
@@ -108,6 +151,15 @@ const handleLogin = async () => {
       setShowModal(true);
     }
   };
+
+  // * [RENDER LOADING STATE]
+  if (loadingConfig) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p>Loading...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-surface">

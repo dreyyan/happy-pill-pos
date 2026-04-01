@@ -1,6 +1,5 @@
 // [IMPORT] Hooks
-import React from "react";
-import { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { usePageTitle } from "../../hooks/usePageTitle";
 
@@ -12,12 +11,15 @@ import PrimaryButton from "../../components/PrimaryButton";
 
 const AdminLogin = () => {
   const navigate = useNavigate();
-  usePageTitle("Admin Login | Happy-Pill Cafe");
 
   // [STATES] Form
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
+
+  // [STATES] Config
+  const [businessName, setBusinessName] = useState("POS System");
+  const [loadingConfig, setLoadingConfig] = useState(true);
 
   // [STATES] Modal
   const [showModal, setShowModal] = useState(false);
@@ -26,10 +28,47 @@ const AdminLogin = () => {
   const [isCancelable, setIsCancelable] = useState(true);
   const [redirectOnConfirm, setRedirectOnConfirm] = useState(false);
 
+  // * [EFFECT] Fetch config from backend
+  useEffect(() => {
+    const fetchConfig = async () => {
+      try {
+        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/admin/config/first-time`);
+        const data = await res.json();
+
+        // No config → onboarding
+        if (!res.ok || !data.success || !data.data) {
+          navigate("/admin/onboarding");
+          return;
+        }
+
+        const { exists, businessName, themeColor, logo } = data.data;
+
+        if (!exists) {
+          navigate("/admin/onboarding");
+          return;
+        }
+
+        // Config exists → set business name
+        setBusinessName(businessName || "POS System");
+
+      } catch (err) {
+        console.error("Error fetching admin config:", err);
+        navigate("/admin/onboarding");
+      } finally {
+        setLoadingConfig(false);
+      }
+    };
+
+    fetchConfig();
+  }, [navigate]);
+
+  // * [UPDATE PAGE TITLE]
+  usePageTitle(`Admin Login | ${businessName}`);
+
   // * [HANDLE] Login admin
   const handleLogin = async () => {
-    // ! [ERROR] Empty username
-    if (email.trim() === "") {
+    // ! [ERROR] Empty email
+    if (!email.trim()) {
       setModalTitle("Email required");
       setModalMessage("Please enter your email to continue.");
       setIsCancelable(false);
@@ -38,7 +77,7 @@ const AdminLogin = () => {
       return;
     }
 
-    // ! [ERROR] Invalid email
+    // ! [ERROR] Invalid email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       setModalTitle("Invalid Email");
@@ -49,7 +88,7 @@ const AdminLogin = () => {
       return;
     }
 
-    // ![ERROR] Empty password
+    // ! [ERROR] Empty password
     if (!password) {
       setModalTitle("Password required");
       setModalMessage("Please enter your password to continue.");
@@ -59,29 +98,20 @@ const AdminLogin = () => {
       return;
     }
 
-    const payload = { email, password, rememberMe };
-    const token = localStorage.getItem("token");
-
     try {
-      const res = await fetch(
-        `${import.meta.env.VITE_API_BASE_URL}/api/auth/admin/login`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(payload),
-        }
-      );
-
+      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/auth/admin/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password, rememberMe }),
+        credentials: "include",
+      });
       const data = await res.json();
 
-      // ![ERROR] Login failed
+      // ! [ERROR] Login failed
       if (!res.ok || !data.success) {
         setModalTitle("Login unsuccessful");
         setModalMessage(
-          "We couldn't log you in. Please check your username and password and try again."
+          "We couldn't log you in. Please check your email and password and try again."
         );
         setIsCancelable(false);
         setRedirectOnConfirm(false);
@@ -89,7 +119,7 @@ const AdminLogin = () => {
         return;
       }
 
-      // *[SUCCESS] Store token and role
+      // * [SUCCESS] Store token and role
       localStorage.setItem("token", data.data.token);
       localStorage.setItem("role", "Admin");
 
@@ -101,7 +131,6 @@ const AdminLogin = () => {
       setRedirectOnConfirm(true);
       setShowModal(true);
     } catch (err) {
-      // ![ERROR] Network or server issue
       console.error(err);
       setModalTitle("Login unsuccessful");
       setModalMessage(
@@ -112,6 +141,15 @@ const AdminLogin = () => {
       setShowModal(true);
     }
   };
+
+  // * [RENDER LOADING STATE]
+  if (loadingConfig) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p>Loading...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-surface">

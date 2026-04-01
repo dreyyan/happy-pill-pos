@@ -22,7 +22,6 @@ const CashierLogin: React.FC = () => {
 
   // [STATES] Config
   const [businessName, setBusinessName] = useState("POS System");
-  const [themeColor, setThemeColor] = useState("#000000");
   const [loadingConfig, setLoadingConfig] = useState(true);
 
   // [STATES] Modal
@@ -45,15 +44,13 @@ const CashierLogin: React.FC = () => {
           return;
         }
 
-        const { exists, businessName, themeColor } = data.data;
+        const { exists, businessName } = data.data;
 
         setBusinessName(exists ? businessName || "POS System" : "POS System");
-        setThemeColor(themeColor || "#000000");
 
       } catch (err) {
         console.error("Error fetching admin config:", err);
         setBusinessName("POS System");
-        setThemeColor("#000000");
       } finally {
         setLoadingConfig(false);
       }
@@ -153,14 +150,10 @@ const CashierLogin: React.FC = () => {
     );
   }
 
-  // * [ADJUSTED COLORS]
-  const adjustedColor = adjustThemeColor(themeColor);
-  const textColor = getContrastColor(adjustedColor);
-
   return (
     <div className="min-h-screen flex flex-col bg-surface">
       {/* [COMPONENT] Image Header */}
-      <ImageHeader themeColor={adjustedColor} businessName={businessName} />
+      <ImageHeader businessName={businessName} />
 
       {/* [CONTENT] Page Body */}
       <div className="flex flex-1 items-center justify-center px-4 py-8 sm:px-6 lg:px-8">
@@ -222,15 +215,14 @@ const CashierLogin: React.FC = () => {
 
             <a
               href={`/forgot-password?role=cashier`}
-              style={{ color: textColor }}
-              className="text-caption hover:underline"
+              className="text-caption hover:underline text-primary-800"
             >
               Forgot Password?
             </a>
           </div>
 
           {/* [PRIMARY BUTTON] Login */}
-          <PrimaryButton text="Login" onClick={handleLogin} color={adjustedColor} />
+          <PrimaryButton text="Login" onClick={handleLogin} />
 
           {/* [SECTION] Navigate > Admin Login */}
           <div className="flex justify-center mt-5">
@@ -238,8 +230,7 @@ const CashierLogin: React.FC = () => {
               Not a Cashier?{" "}
               <a
                 href="/login/admin"
-                style={{ color: adjustedColor }}
-                className="link hover:underline"
+                className="link hover:underline text-primary-600"
               >
                 Login as Admin
               </a>

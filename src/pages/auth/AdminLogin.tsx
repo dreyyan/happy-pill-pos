@@ -22,7 +22,6 @@ const AdminLogin = () => {
 
   // [STATES] Config
   const [businessName, setBusinessName] = useState("POS System");
-  const [themeColor, setThemeColor] = useState("#000000");
   const [loadingConfig, setLoadingConfig] = useState(true);
 
   // [STATES] Modal
@@ -45,7 +44,7 @@ const AdminLogin = () => {
           return;
         }
 
-        const { exists, businessName, themeColor } = data.data;
+        const { exists, businessName } = data.data;
 
         if (!exists) {
           navigate("/admin/onboarding");
@@ -55,7 +54,6 @@ const AdminLogin = () => {
         
         // Config exists, set values (use defaults if missing)
         setBusinessName(businessName || "POS System");
-        setThemeColor(themeColor);
 
       } catch (err) {
         console.error("Error fetching admin config:", err);
@@ -160,7 +158,7 @@ const AdminLogin = () => {
   return (
     <div className="min-h-screen flex flex-col bg-surface">
       {/* [COMPONENT] Image Header */}
-      <ImageHeader themeColor={adjustThemeColor(themeColor)} businessName={businessName} />
+      <ImageHeader businessName={businessName} />
 
       {/* [CONTENT] Page Body */}
       <div className="flex flex-1 items-center justify-center px-4 py-8 sm:px-6 lg:px-8">
@@ -222,15 +220,14 @@ const AdminLogin = () => {
 
             <a
               href={`/forgot-password?role=admin`}
-              style={{ color: (adjustThemeColor(themeColor)) }}
-              className="text-caption hover:underline"
+              className="text-caption hover:underline text-primary-800"
             >
               Forgot Password?
             </a>
           </div>
 
           {/* [PRIMARY BUTTON] Login */}
-          <PrimaryButton text="Login" onClick={handleLogin} color={adjustThemeColor(themeColor)} />
+          <PrimaryButton text="Login" onClick={handleLogin} />
 
           {/* [SECTION] Navigate > Cashier Login */}
           <div className="flex justify-center mt-5">
@@ -238,8 +235,7 @@ const AdminLogin = () => {
               Not an Admin?{" "}
               <a
                 href="/login/cashier"
-                style={{ color: (adjustThemeColor(themeColor)) }}
-                className="link hover:underline"
+                className="link hover:underline text-primary-600"
               >
                 Login as Cashier
               </a>

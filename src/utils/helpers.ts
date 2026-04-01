@@ -63,21 +63,17 @@ const hslToHex = (h: number, s: number, l: number) => {
   return `#${toHex(f(0))}${toHex(f(8))}${toHex(f(4))}`;
 };
 
-// ? [HELPER] Adjust theme color brightness if it's too light for better contrast
-export const adjustThemeColor = (hex: string) => {
+// ? [HELPER] Adjust theme color brightness if needed for better contrast
+export const adjustThemeColor = (hex: string, lightnessOffset: number = 0) => {
   // Convert hex → HSL
   const { h, s, l } = hexToHSL(hex);
 
-  let newL = l;
-  let newS = s;
+  // Apply optional lightness offset
+  let newL = l + lightnessOffset;
+  newL = Math.min(100, Math.max(0, newL));
 
-  // If lightness is too high, force it down
-  if (l > 45) {
-    newL = 45;   // much darker
-    newS = Math.min(s * 1.1, 100);
-  } else if (l > 65) {
-    newL = 55;
-  }
+  // Keep saturation same
+  const newS = s;
 
   // Convert back to hex
   return hslToHex(h, newS, newL);

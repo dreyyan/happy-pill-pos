@@ -70,7 +70,6 @@ const AdminItems = () => {
     department: "RESTOBAR" as const,
   };
   const [formData, setFormData] = useState(initialForm);
-  const selectedCategory = categories.find((c) => c.id === formData.categoryId);
 
   // [STATES] Config
   const [businessName, setBusinessName] = useState("POS System");
@@ -342,30 +341,40 @@ const AdminItems = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Filtered & Sorted items (UPDATED with department filter)
-  const displayedItems = items
+  // [FILTER] Items
+  const filteredItems = items
     .filter((item) =>
       item.name.toLowerCase().includes(search.toLowerCase()) ||
       item.sku.toLowerCase().includes(search.toLowerCase())
     )
+    .filter((item) => (filterDepartment === "ALL" ? true : item.department === filterDepartment))
     .filter((item) => (filterCategoryId ? item.category?.id === filterCategoryId : true))
-    .filter((item) => (filterSubcategoryId ? item.subcategory?.id === filterSubcategoryId : true))
-    // NEW: Department filter
-    .filter((item) => {
-      if (filterDepartment === "ALL") return true;
-      return item.department === filterDepartment;
-    })
-    .sort((a, b) => {
-      switch (sortOption) {
-        case "name-asc": return a.name.localeCompare(b.name);
-        case "name-desc": return b.name.localeCompare(a.name);
-        case "sku-asc": return a.sku.localeCompare(b.sku);
-        case "sku-desc": return b.sku.localeCompare(a.sku);
-        case "price-asc": return a.price - b.price;
-        case "price-desc": return b.price - a.price;
-      }
-      return 0;
-    });
+    .filter((item) => (filterSubcategoryId ? item.subcategory?.id === filterSubcategoryId : true));
+
+  // [FILTER] Categories
+  const filteredCategories = categories.filter((cat) =>
+    filteredItems.some((item) => item.category?.id === cat.id)
+  );
+
+  // [FILTER] Subcategories
+  const selectedCategory = categories.find((c) => c.id === filterCategoryId);
+  const filteredSubcategories =
+    selectedCategory?.subcategories.filter((sub: { id: any; }) =>
+      filteredItems.some((item) => item.subcategory?.id === sub.id)
+    ) ?? [];
+
+  // [FILTER] Filtered Items
+  const displayedItems = filteredItems.sort((a, b) => {
+    switch (sortOption) {
+      case "name-asc": return a.name.localeCompare(b.name);
+      case "name-desc": return b.name.localeCompare(a.name);
+      case "sku-asc": return a.sku.localeCompare(b.sku);
+      case "sku-desc": return b.sku.localeCompare(a.sku);
+      case "price-asc": return a.price - b.price;
+      case "price-desc": return b.price - a.price;
+      default: return 0;
+    }
+  });
 
   // [DERIVED] Mobile paginated slice of displayedItems
   const totalPages = Math.ceil(displayedItems.length / MOBILE_PAGE_SIZE);
@@ -539,7 +548,7 @@ const AdminItems = () => {
           }}
         >
           <option value="">All Categories</option>
-          {categories.map((c) => (
+          {filteredCategories.map((c) => (
             <option key={c.id} value={c.id}>
               {c.name}
             </option>
@@ -549,19 +558,18 @@ const AdminItems = () => {
         {/* [FILTER] Subcategory */}
         <select
           className="flex-1 min-w-[140px] bg-[var(--color-bg-50)] rounded-sm py-2 px-3 text-sm outline-none focus:ring-2 focus:ring-[var(--color-primary-600)]"
-          value={filterSubcategoryId ?? ""}
-          onChange={(e) => setFilterSubcategoryId(Number(e.target.value) || null)}
+          value={formData.subcategoryId ?? ""}
+          onChange={(e) =>
+            setFormData({ ...formData, subcategoryId: e.target.value ? +e.target.value : undefined })
+          }
           disabled={!filterCategoryId}
         >
           <option value="">All Subcategories</option>
-          {filterCategoryId &&
-            categories
-              .find((c) => c.id === filterCategoryId)
-              ?.subcategories.map((s: { id: React.Key | readonly string[] | null | undefined; name: string | number | bigint | boolean | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | React.ReactPortal | Promise<string | number | bigint | boolean | React.ReactPortal | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | null | undefined> | null | undefined; }) => (
-                <option key={s.id} value={s.id}>
-                  {s.name}
-                </option>
-              ))}
+          {filteredSubcategories.map((s: { id: React.Key | readonly string[] | null | undefined; name: string | number | bigint | boolean | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | React.ReactPortal | Promise<string | number | bigint | boolean | React.ReactPortal | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | null | undefined> | null | undefined; }) => (
+            <option key={s.id} value={s.id}>
+              {s.name}
+            </option>
+          ))}
         </select>
       </div>
 

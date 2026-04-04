@@ -1,0 +1,130 @@
+Name,SKU,Selling Price,Cost,Quantity,Category,Subcategory,Unit,Department
+Lechon Kawali,FOO-PKF-LCK,260.00,130.00,0,Food,Pork Favorites,1 serv.,Restobar
+Pork Sisig (Regular),FOO-PKF-PSS,260.00,130.00,0,Food,Pork Favorites,1 serv.,Restobar
+Adobo Backribs,FOO-PKF-ADB,300.00,150.00,0,Food,Pork Favorites,1 serv.,Restobar
+Pork Sinigang,FOO-PKF-PSN,400.00,200.00,0,Food,Pork Favorites,1 serv.,Restobar
+Buffalo Wings,FOO-CKC-BFL,260.00,130.00,0,Food,Chicken Classics,1 serv.,Restobar
+Buttered Chicken,FOO-CKC-BCK,260.00,130.00,0,Food,Chicken Classics,1 serv.,Restobar
+Chicken Teriyaki,FOO-CKC-CKT,260.00,130.00,0,Food,Chicken Classics,1 serv.,Restobar
+Fried Chix,FOO-CKC-FCX,230.00,115.00,0,Food,Chicken Classics,1 serv.,Restobar
+Fried Chix w/ Fries & Mojos,FOO-CKC-FCW,310.00,155.00,0,Food,Chicken Classics,1 serv.,Restobar
+Calamares (Regular),FOO-SFS-CLM,230.00,115.00,0,Food,Seafood Specials,1 serv.,Restobar
+Fish Fillet (Regular),FOO-SFS-FFL,230.00,115.00,0,Food,Seafood Specials,1 serv.,Restobar
+Sinigang Bangus,FOO-SFS-SNB,400.00,200.00,0,Food,Seafood Specials,1 serv.,Restobar
+Sisig Bangus,FOO-SFS-SSB,400.00,200.00,0,Food,Seafood Specials,1 serv.,Restobar
+Sizzling Bangus,FOO-SFS-SZB,400.00,200.00,0,Food,Seafood Specials,1 serv.,Restobar
+Fries,FOO-SAP-FRI,130.00,65.00,0,Food,Snacks/Appetizers,1 serv.,Restobar
+Mojos,FOO-SAP-MOJ,130.00,65.00,0,Food,Snacks/Appetizers,1 serv.,Restobar
+Sour Cream French Fries,FOO-SAP-SCF,140.00,70.00,0,Food,Snacks/Appetizers,1 serv.,Restobar
+BBQ French Fries,FOO-SAP-BQF,140.00,70.00,0,Food,Snacks/Appetizers,1 serv.,Restobar
+Cheese French Fries,FOO-SAP-CHF,140.00,70.00,0,Food,Snacks/Appetizers,1 serv.,Restobar
+Sour Cream Mojos,FOO-SAP-SCM,140.00,70.00,0,Food,Snacks/Appetizers,1 serv.,Restobar
+BBQ Mojos,FOO-SAP-BQM,140.00,70.00,0,Food,Snacks/Appetizers,1 serv.,Restobar
+Cheese Mojos,FOO-SAP-CHM,140.00,70.00,0,Food,Snacks/Appetizers,1 serv.,Restobar
+"Street Food Platter (Fish & Shrimp Ball, Fries)",FOO-SAP-SFP,130.00,65.00,0,Food,Snacks/Appetizers,1 serv.,Restobar
+Cheese Sticks,FOO-SAP-CST,130.00,65.00,0,Food,Snacks/Appetizers,1 serv.,Restobar
+Lumpia Shanghai,FOO-SAP-LSH,130.00,65.00,0,Food,Snacks/Appetizers,1 serv.,Restobar
+Chicken Skin (Regular),FOO-SAP-CSK,230.00,115.00,0,Food,Snacks/Appetizers,1 serv.,Restobar
+Nachos,FOO-SAP-NCH,230.00,115.00,0,Food,Snacks/Appetizers,1 serv.,Restobar
+Steamed Siomai,FOO-SAP-SSM,100.00,50.00,0,Food,Snacks/Appetizers,10 pcs.,Restobar
+Fried Siomai,FOO-SAP-FSM,100.00,50.00,0,Food,Snacks/Appetizers,10 pcs.,Restobar
+Sizzling Tofu,FOO-SAP-SZT,250.00,125.00,0,Food,Snacks/Appetizers,1 serv.,Restobar
+Sweet and Sour Tofu,FOO-SAP-SST,250.00,125.00,0,Food,Snacks/Appetizers,1 serv.,Restobar
+Kropek,FOO-SAP-KRP,50.00,25.00,0,Food,Snacks/Appetizers,1 serv.,Restobar
+Plain Rice,FOO-AFR-PLR,30.00,15.00,0,Food,Afforda-rice,1 cup,Restobar
+Garlic Rice,FOO-AFR-GLR,35.00,17.50,0,Food,Afforda-rice,1 cup,Restobar
+Calamares (Budget Meal),FOO-BGM-CLM,140.00,70.00,0,Food,Budget Meals,1 serv.,Restobar
+Chicken Skin (Budget Meal),FOO-BGM-CSK,140.00,70.00,0,Food,Budget Meals,1 serv.,Restobar
+Fish Fillet (Budget Meal),FOO-BGM-FFL,140.00,70.00,0,Food,Budget Meals,1 serv.,Restobar
+Sweet & Sour Tofu (Budget Meal),FOO-BGM-SST,140.00,70.00,0,Food,Budget Meals,1 serv.,Restobar
+Fried Tofu (Budget Meal),FOO-BGM-FRT,140.00,70.00,0,Food,Budget Meals,1 serv.,Restobar
+Pork Sisig (Budget Meal),FOO-BGM-PSS,175.00,87.50,0,Food,Budget Meals,1 serv.,Restobar
+Fried Bangus (Budget Meal),FOO-BGM-FRB,180.00,90.00,0,Food,Budget Meals,1 serv.,Restobar
+Fried Chix (Budget Meal),FOO-BGM-FCH,150.00,75.00,0,Food,Budget Meals,1 serv.,Restobar
+Teriyaki (Budget Meal),FOO-BGM-TRY,160.00,80.00,0,Food,Budget Meals,1 serv.,Restobar
+Buttered Chicken (Budget Meal),FOO-BGM-BCK,160.00,80.00,0,Food,Budget Meals,1 serv.,Restobar
+Buffalo Wings (Budget Meal),FOO-BGM-BFW,160.00,80.00,0,Food,Budget Meals,1 serv.,Restobar
+Adobo Backribs (Budget Meal),FOO-BGM-ABR,190.00,95.00,0,Food,Budget Meals,1 serv.,Restobar
+Lechon Kawali (Budget Meal),FOO-BGM-LCK,160.00,80.00,0,Food,Budget Meals,1 serv.,Restobar
+Canton Guisado,FOO-GSR-CTG,260.00,130.00,0,Food,Guisarap,1 serv.,Restobar
+Bijon Guisado,FOO-GSR-BJG,260.00,130.00,0,Food,Guisarap,1 serv.,Restobar
+Sotanghon Guisado,FOO-GSR-SJG,260.00,130.00,0,Food,Guisarap,1 serv.,Restobar
+Cornsilog,FOO-YSL-CNS,140.00,70.00,0,Food,Yum-silog,1 serv.,Restobar
+Tocilog,FOO-YSL-TOC,140.00,70.00,0,Food,Yum-silog,1 serv.,Restobar
+Tapsilog,FOO-YSL-TAP,150.00,75.00,0,Food,Yum-silog,1 serv.,Restobar
+Hotsilog,FOO-YSL-HTS,130.00,65.00,0,Food,Yum-silog,1 serv.,Restobar
+Grapes Tower,DRK-HPT-GRT,450.00,225.00,0,Drinks,Happy Towers,1.5 L,Restobar
+Strawberry Tower,DRK-HPT-SBT-15,450.00,225.00,0,Drinks,Happy Towers,1.5 L,Restobar
+Dalandan Tower,DRK-HPT-DDT-15,450.00,225.00,0,Drinks,Happy Towers,1.5 L,Restobar
+Pomelo Tower,DRK-HPT-PMT-15,450.00,225.00,0,Drinks,Happy Towers,1.5 L,Restobar
+Grapes Tower,DRK-HPT-GRT-15,700.00,350.00,0,Drinks,Happy Towers,3 L,Restobar
+Strawberry Tower,DRK-HPT-SBT-3,700.00,350.00,0,Drinks,Happy Towers,3 L,Restobar
+Dalandan Tower,DRK-HPT-DDT-3,700.00,350.00,0,Drinks,Happy Towers,3 L,Restobar
+Pomelo Tower,DRK-HPT-PMT-3,700.00,350.00,0,Drinks,Happy Towers,3 L,Restobar
+Beer Tower,DRK-BEE-BET,650.00,325.00,0,Drinks,Beer,3 L,Restobar
+Draft Beer,DRK-BEE-DRB,120.00,60.00,0,Drinks,Beer,1 mug,Restobar
+Jinro Soju Grapefruit,DRK-ACH-JSG,200.00,100.00,0,Drinks,Alcohol Avenue,360 mL,Restobar
+Clvb Emperador,DRK-ACH-CEM,450.00,225.00,0,Drinks,Alcohol Avenue,750 mL,Restobar
+Clvb Emperador (w/ Ice Tea & Kropek),DRK-ACH-CEW,600.00,300.00,0,Drinks,Alcohol Avenue,1.5 L,Restobar
+Charles & James (w/ Ice Tea & Kropek),DRK-ACH-CJW,500.00,250.00,0,Drinks,Alcohol Avenue,1 bottle,Restobar
+Andy Player (w/ Ice Tea & Kropek),DRK-ACH-ADP,500.00,250.00,0,Drinks,Alcohol Avenue,2 bottles,Restobar
+Primera (w/ Ice Tea & Kropek),DRK-ACH-PMR,500.00,250.00,0,Drinks,Alcohol Avenue,1 L,Restobar
+Alhambra Solera Light,DRK-ACH-ASL,550.00,275.00,0,Drinks,Alcohol Avenue,1 L,Restobar
+Alfonzo Light,DRK-ACH-AFL,750.00,375.00,0,Drinks,Alcohol Avenue,1 L,Restobar
+Fundador Super Special,DRK-ACH-FSS,750.00,375.00,0,Drinks,Alcohol Avenue,1 bottle,Restobar
+Fundador Light,DRK-ACH-FDL,750.00,375.00,0,Drinks,Alcohol Avenue,1 bottle,Restobar
+Carlos I Light,DRK-ACH-CLL,780.00,390.00,0,Drinks,Alcohol Avenue,1 bottle,Restobar
+Jose Cuervo Tequila,DRK-ACH-JT7,1900.00,950.00,0,Drinks,Alcohol Avenue,700 mL,Restobar
+Jose Cuervo Tequila,DRK-ACH-JT1,2300.00,1150.00,0,Drinks,Alcohol Avenue,1 L,Restobar
+Jim Beam,DRK-ACH-JMB,1980.00,990.00,0,Drinks,Alcohol Avenue,1 L,Restobar
+Johnny Walker Red Label,DRK-ACH-JWR,1650.00,825.00,0,Drinks,Alcohol Avenue,1 bottle,Restobar
+Johnny Walker Black Label,DRK-ACH-JWB,2500.00,1250.00,0,Drinks,Alcohol Avenue,1 bottle,Restobar
+Johnny Walker Double Black,DRK-ACH-JWD,3600.00,1800.00,0,Drinks,Alcohol Avenue,1 bottle,Restobar
+Chivas Regal,DRK-ACH-CVR,2230.00,1115.00,0,Drinks,Alcohol Avenue,700 mL,Restobar
+Jack Daniel Whiskey,DRK-ACH-JDW,2350.00,1175.00,0,Drinks,Alcohol Avenue,700 mL,Restobar
+Tanduay Light,DRK-ACH-TL1,350.00,175.00,0,Drinks,Alcohol Avenue,1 bottle,Restobar
+Tanduay Light,DRK-ACH-TL2,600.00,300.00,0,Drinks,Alcohol Avenue,2 bottles,Restobar
+Tanduay Select,DRK-ACH-TS1,350.00,175.00,0,Drinks,Alcohol Avenue,1 bottle,Restobar
+Tanduay Select,DRK-ACH-TS2,600.00,300.00,0,Drinks,Alcohol Avenue,2 bottles,Restobar
+Tanduay Flavored,DRK-ACH-TF1,300.00,150.00,0,Drinks,Alcohol Avenue,1 bottle,Restobar
+Tanduay Flavored,DRK-ACH-TF2,550.00,275.00,0,Drinks,Alcohol Avenue,2 bottles,Restobar
+Leon,DRK-BOT-LO1,70.00,35.00,0,Drinks,Bottle,1 bottle,Restobar
+San Mig Light,DRK-BOT-SL1,110.00,55.00,0,Drinks,Bottle,1 bottle,Restobar
+San Mig Apple,DRK-BOT-SA1,110.00,55.00,0,Drinks,Bottle,1 bottle,Restobar
+Pilsen,DRK-BOT-PS1,110.00,55.00,0,Drinks,Bottle,1 bottle,Restobar
+Stallion,DRK-BOT-SI1,110.00,55.00,0,Drinks,Bottle,1 bottle,Restobar
+RH 500,DRK-BOT-R51,130.00,65.00,0,Drinks,Bottle,1 bottle,Restobar
+RH,DRK-BOT-RH1,220.00,110.00,0,Drinks,Bottle,1 L,Restobar
+Heineken,DRK-BOT-HK1,100.00,50.00,0,Drinks,Bottle,1 bottle,Restobar
+Mule Smirnoff,DRK-BOT-MS1,130.00,65.00,0,Drinks,Bottle,1 bottle,Restobar
+Tanduay Ice (Mix),DRK-BOT-TI1,95.00,47.50,0,Drinks,Bottle,1 bottle,Restobar
+Leon,DRK-BCK-LO6,400.00,200.00,0,Drinks,Bucket,1 bucket,Restobar
+San Mig Light,DRK-BCK-SL6,640.00,320.00,0,Drinks,Bucket,1 bucket,Restobar
+San Mig Apple,DRK-BCK-SA6,640.00,320.00,0,Drinks,Bucket,1 bucket,Restobar
+Pilsen,DRK-BCK-PS6,640.00,320.00,0,Drinks,Bucket,1 bucket,Restobar
+Stallion,DRK-BCK-SI6,640.00,320.00,0,Drinks,Bucket,1 bucket,Restobar
+RH 500,DRK-BCK-R56,760.00,380.00,0,Drinks,Bucket,1 bucket,Restobar
+Heineken,DRK-BCK-HK6,575.00,287.50,0,Drinks,Bucket,1 bucket,Restobar
+Mule Smirnoff,DRK-BCK-MS6,760.00,380.00,0,Drinks,Bucket,1 bucket,Restobar
+Tanduay Ice (Mix),DRK-BCK-TI6,550.00,275.00,0,Drinks,Bucket,1 bucket,Restobar
+Cucumber,DRK-SHK-CCB,120.00,60.00,0,Drinks,Shakes,1 serv.,Restobar
+Mango,DRK-SHK-MGO,120.00,60.00,0,Drinks,Shakes,1 serv.,Restobar
+Mango Graham,DRK-SHK-MGH,120.00,60.00,0,Drinks,Shakes,1 serv.,Restobar
+Strawberry,DRK-SHK-SBR,120.00,60.00,0,Drinks,Shakes,1 serv.,Restobar
+Cookies ‘n Cream,DRK-SHK-CNC,120.00,60.00,0,Drinks,Shakes,1 serv.,Restobar
+Royal Sakto,DRK-OTH-RYS,25.00,12.50,0,Drinks,Others,190 mL,Restobar
+Sprite Sakto,DRK-OTH-SPS,25.00,12.50,0,Drinks,Others,190 mL,Restobar
+Mt. Dew,DRK-OTH-MTD,40.00,20.00,0,Drinks,Others,190 mL,Restobar
+Coke Sakto,DRK-OTH-CKS,25.00,12.50,0,Drinks,Others,190 mL,Restobar
+Coke,DRK-OTH-C12,40.00,20.00,0,Drinks,Others,12 oz.,Restobar
+Coke,DRK-OTH-C15,180.00,90.00,0,Drinks,Others,1.5 L,Restobar
+Bottled Water,DRK-OTH-BW5,30.00,15.00,0,Drinks,Others,500 mL,Restobar
+Bottled Water,DRK-OTH-BW1,35.00,17.50,0,Drinks,Others,1 L,Restobar
+Iced Tea Pitcher,DRK-OTH-ITP,100.00,50.00,0,Drinks,Others,1 L,Restobar
+Cucumber Pitcher,DRK-OTH-CBP,100.00,50.00,0,Drinks,Others,1 L,Restobar
+Moscow Mule,DRK-SHO-MSM,200.00,100.00,0,Drinks,Shots,1 serv.,Restobar
+Mexican Mule,DRK-SHO-MXM,200.00,100.00,0,Drinks,Shots,1 serv.,Restobar
+Kentucky Mule,DRK-SHO-KTM,200.00,100.00,0,Drinks,Shots,1 serv.,Restobar
+Margarita,DRK-SHO-MGR,220.00,110.00,0,Drinks,Shots,1 serv.,Restobar
+Rhumcoke,DRK-SHO-RMC,120.00,60.00,0,Drinks,Shots,1 serv.,Restobar
+Gintonic,DRK-SHO-GTN,130.00,65.00,0,Drinks,Shots,1 serv.,Restobar

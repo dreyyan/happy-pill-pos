@@ -166,14 +166,14 @@ router.get('/', verifyRole(['ADMIN', 'CASHIER']), async (req: Request, res: Resp
 
     // [1] Search by name, sku, or barcode
     if (search) {
-    filters.OR = [
+      filters.OR = [
         { name: { contains: String(search), mode: "insensitive" } },
-        { sku:  { contains: String(search), mode: "insensitive" } },
+        { sku: { contains: String(search), mode: "insensitive" } },
         { barcode: { contains: String(search), mode: "insensitive" } },
-    ];
+      ];
     }
 
-    // [2] Filter by categoryId (not category object)
+    // [2] Filter by categoryId
     if (category) filters.categoryId = Number(category);
 
     // [3] Filter by active status
@@ -181,14 +181,28 @@ router.get('/', verifyRole(['ADMIN', 'CASHIER']), async (req: Request, res: Resp
 
     // [4] Fetch items
     const items = await prisma.item.findMany({
-    where: filters,
-    include: {
-        category: true,
+      where: filters,
+      include: {
+        category: {
+          include: {
+            subcategories: {
+              include: {
+                items: {
+                  select: {
+                    id: true,
+                    name: true,
+                    department: true,
+                  },
+                },
+              },
+            },
+          },
+        },
         subcategory: true,
         createdBy: { select: { id: true, email: true, firstName: true, lastName: true, role: true } },
         updatedBy: { select: { id: true, email: true, firstName: true, lastName: true, role: true } },
-    },
-    orderBy: { name: "asc" },
+      },
+      orderBy: { name: 'asc' },
     });
 
     // * [SUCCESS] Return items
@@ -197,10 +211,10 @@ router.get('/', verifyRole(['ADMIN', 'CASHIER']), async (req: Request, res: Resp
   } catch (err: unknown) {
     let errorMessage = "An unexpected error occurred while fetching items";
     if (err instanceof Error) {
-        errorMessage = err.message;
-        error(`Error fetching items: ${errorMessage}`);
+      errorMessage = err.message;
+      error(`Error fetching items: ${errorMessage}`);
     } else {
-        error(`Error fetching items: ${JSON.stringify(err)}`);
+      error(`Error fetching items: ${JSON.stringify(err)}`);
     }
     res.status(500).json(errorResponse(errorMessage));
     next(err);

@@ -26,6 +26,9 @@ const CashierItems = () => {
   const [filterCategoryId, setFilterCategoryId] = useState<number | null>(null);
   const [filterSubcategoryId, setFilterSubcategoryId] = useState<number | null>(null);
 
+  // [STATE] Department Filter
+  const [filterDepartment, setFilterDepartment] = useState<"RESTOBAR" | "CAFE" | "ALL">("ALL");
+
   // [STATE] Modal
   const [showModal, setShowModal] = useState(false);
   const [modalTitle, setModalTitle] = useState("");
@@ -156,7 +159,7 @@ const CashierItems = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Filtered & Sorted items
+  // Filtered & Sorted items (UPDATED with department filter)
   const displayedItems = items
     .filter((item) =>
       item.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -164,6 +167,11 @@ const CashierItems = () => {
     )
     .filter((item) => (filterCategoryId ? item.category?.id === filterCategoryId : true))
     .filter((item) => (filterSubcategoryId ? item.subcategory?.id === filterSubcategoryId : true))
+    // NEW: Department filter
+    .filter((item) => {
+      if (filterDepartment === "ALL") return true;
+      return item.department === filterDepartment;
+    })
     .sort((a, b) => {
       switch (sortOption) {
         case "name-asc": return a.name.localeCompare(b.name);
@@ -259,10 +267,25 @@ const CashierItems = () => {
         </div>
       </div>
 
-      {/* Category Filters */}
-      <div className="flex gap-2 mt-4">
+      <div className="flex flex-wrap gap-2 mt-4">
+        {/* [FILTER] Department */}
         <select
-          className="flex-1 bg-[var(--color-bg-50)] rounded-sm py-2 px-3 text-sm outline-none focus:ring-2 focus:ring-[var(--color-primary-600)]"
+          className="flex-1 min-w-[140px] bg-[var(--color-bg-50)] rounded-sm py-2 px-3 text-sm outline-none focus:ring-2 focus:ring-[var(--color-primary-600)]"
+          value={filterDepartment}
+          onChange={(e) => {
+            setFilterDepartment(e.target.value as "RESTOBAR" | "CAFE" | "ALL");
+            setFilterCategoryId(null);
+            setFilterSubcategoryId(null);
+          }}
+        >
+          <option value="ALL">All Departments</option>
+          <option value="RESTOBAR">Restobar</option>
+          <option value="CAFE">Cafe</option>
+        </select>
+
+        {/* [FILTER] Category */}
+        <select
+          className="flex-1 min-w-[140px] bg-[var(--color-bg-50)] rounded-sm py-2 px-3 text-sm outline-none focus:ring-2 focus:ring-[var(--color-primary-600)]"
           value={filterCategoryId ?? ""}
           onChange={(e) => {
             const id = Number(e.target.value) || null;
@@ -271,11 +294,16 @@ const CashierItems = () => {
           }}
         >
           <option value="">All Categories</option>
-          {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+          {categories.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.name}
+            </option>
+          ))}
         </select>
 
+        {/* [FILTER] Subcategory */}
         <select
-          className="flex-1 bg-[var(--color-bg-50)] rounded-sm py-2 px-3 text-sm outline-none focus:ring-2 focus:ring-[var(--color-primary-600)]"
+          className="flex-1 min-w-[140px] bg-[var(--color-bg-50)] rounded-sm py-2 px-3 text-sm outline-none focus:ring-2 focus:ring-[var(--color-primary-600)]"
           value={filterSubcategoryId ?? ""}
           onChange={(e) => setFilterSubcategoryId(Number(e.target.value) || null)}
           disabled={!filterCategoryId}
@@ -284,7 +312,7 @@ const CashierItems = () => {
           {filterCategoryId &&
             categories
               .find((c) => c.id === filterCategoryId)
-              ?.subcategories.map((s) => (
+              ?.subcategories.map((s: { id: React.Key | readonly string[] | null | undefined; name: string | number | bigint | boolean | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | React.ReactPortal | Promise<string | number | bigint | boolean | React.ReactPortal | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | null | undefined> | null | undefined; }) => (
                 <option key={s.id} value={s.id}>
                   {s.name}
                 </option>

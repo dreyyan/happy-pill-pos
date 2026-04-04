@@ -31,108 +31,129 @@ interface CsvProductRow {
 }
 // * [POST] Import Items via CSV
 // ? /api/items/import-items
-router.post("/import-items", verifyRole(['ADMIN']), upload.single("file"), async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    // ! [ERROR] No .csv file uploaded
-    if (!req.file) return res.status(400).json(errorResponse("CSV file is required"));
+router.post(
+  "/import-items",
+  verifyRole(['ADMIN']),
+  upload.single("file"),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      if (!req.file) return res.status(400).json(errorResponse("CSV file is required"));
 
-    // [1] Read file content
-    const fileContent = fs.readFileSync(req.file.path, "utf-8");
-    info(`[CSV IMPORT] File read successfully:\n${fileContent}`);
+      const fileContent = fs.readFileSync(req.file.path, "utf-8");
+      info(`[CSV IMPORT] File read successfully`);
 
-    // [2] Parse CSV synchronously with tab delimiter
-    const records = parse(fileContent, {
-      columns: true,
-      skip_empty_lines: true,
-      trim: true,
-      delimiter: ","
-    }) as CsvProductRow[];
-    info(`[CSV IMPORT] Parsed ${records.length} records`);
+      const records = parse(fileContent, {
+        columns: true,
+        skip_empty_lines: true,
+        trim: true,
+        delimiter: ","
+      }) as CsvProductRow[];
 
-    let createdCount = 0;
+      info(`[CSV IMPORT] Parsed ${records.length} records`);
 
-    // [3] Process each record
-    for (let i = 0; i < records.length; i++) {
-      const row = records[i];
-      info(`[CSV IMPORT] Processing row ${i + 1}: ${row}`);
+      let createdCount = 0;
 
-      const name = row["Name"]?.trim();
-      const sku = row["SKU"]?.trim();
-      const price = parseFloat(row["Selling Price"]);
-      const cost = parseFloat(row["Cost"]);
-      const quantity = parseInt(row["Quantity"]) || 0;
-      const categoryName = row["Category"]?.trim();
-      const subcategoryName = row["Subcategory"]?.trim();
-      const unit = row["Unit"]?.trim();
+      // * Preload existing categories and subcategories
+      const categoryMap = new Map<string, number>();
+      const subcategoryMap = new Map<string, number>(); // key: `${categoryId}_${subName}`
 
-      // ! [ERROR] Missing required fields: name, SKU, price, category, subcategory
-      if (!name || !sku || isNaN(price) || !categoryName || !subcategoryName) {
-        info(`[CSV IMPORT] Skipping row ${i + 1}: missing required fields`);
-        continue;
-      }
+      const categories = await prisma.category.findMany();
+      categories.forEach(c => categoryMap.set(c.name, c.id));
 
-      // [4] Check if item SKU already exists
-      const existing = await prisma.item.findUnique({ where: { sku } });
-      if (existing) {
-        info(`[CSV IMPORT] Skipping row ${i + 1}: SKU ${sku} already exists`);
-        continue;
-      }
+      const subcategories = await prisma.subcategory.findMany();
+      subcategories.forEach(s => subcategoryMap.set(`${s.categoryId}_${s.name}`, s.id));
 
-      // [5] Fetch category
-      let category = await prisma.category.findUnique({ where: { name: categoryName } });
-      if (!category) {
-        category = await prisma.category.create({ data: { name: categoryName } });
-        info(`[CSV IMPORT] Created new category: ${categoryName}`);
-      }
+      // * Process each row
+      for (let i = 0; i < records.length; i++) {
+        const row = records[i];
+        info(`[CSV IMPORT] Processing row ${i + 1}`);
 
-      // [6] Fetch subcategory
-      let subcategory = await prisma.subcategory.findUnique({
-        where: { name_categoryId: { name: subcategoryName, categoryId: category.id } }
-      });
-      
-      // [7] Create subcategory if non-existing
-      if (!subcategory) {
-        subcategory = await prisma.subcategory.create({
-          data: { name: subcategoryName, categoryId: category.id }
-        });
-        info(`[CSV IMPORT] Created new subcategory: ${subcategoryName}`);
-      }
+        try {
+          const name = row.Name?.trim();
+          const sku = row.SKU?.trim();
+          const price = parseFloat(row["Selling Price"]);
+          const cost = parseFloat(row.Cost);
+          const quantity = parseInt(row.Quantity) || 0;
+          const categoryName = row.Category?.trim();
+          const subcategoryName = row.Subcategory?.trim();
+          const unit = row.Unit?.trim() || "";
 
-      // [7] Create item
-      await prisma.item.create({
-        data: {
-          name,
-          sku,
-          price,
-          cost,
-          quantity,
-          unit,
-          categoryId: category.id,
-          subcategoryId: subcategory.id,
-          isActive: true,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          createdById: (req as any).user.userId
+          // Parse Department enum safely, default to CAFE
+          const departmentEnum: "CAFE" | "RESTOBAR" =
+            (row.Department?.trim().toUpperCase() as "CAFE" | "RESTOBAR") || "CAFE";
+
+          // Skip invalid rows
+          if (!name || !sku || isNaN(price) || !categoryName || !subcategoryName) {
+            info(`[CSV IMPORT] Skipping row ${i + 1}: missing required fields`);
+            continue;
+          }
+
+          // Skip existing SKU
+          if (await prisma.item.findUnique({ where: { sku } })) {
+            info(`[CSV IMPORT] Skipping row ${i + 1}: SKU ${sku} already exists`);
+            continue;
+          }
+
+          // Category
+          let categoryId = categoryMap.get(categoryName);
+          if (!categoryId) {
+            const cat = await prisma.category.create({ data: { name: categoryName } });
+            categoryId = cat.id;
+            categoryMap.set(categoryName, categoryId);
+            info(`[CSV IMPORT] Created category: ${categoryName}`);
+          }
+
+          // Subcategory
+          const subKey = `${categoryId}_${subcategoryName}`;
+          let subcategoryId = subcategoryMap.get(subKey);
+          if (!subcategoryId) {
+            const sub = await prisma.subcategory.create({
+              data: { name: subcategoryName, categoryId }
+            });
+            subcategoryId = sub.id;
+            subcategoryMap.set(subKey, subcategoryId);
+            info(`[CSV IMPORT] Created subcategory: ${subcategoryName}`);
+          }
+
+          // Create item
+          await prisma.item.create({
+            data: {
+              name,
+              sku,
+              price,
+              cost,
+              quantity,
+              unit,
+              categoryId,
+              subcategoryId,
+              department: departmentEnum, // assign enum directly
+              isActive: true,
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              createdById: (req as any).user.userId
+            }
+          });
+
+          createdCount++;
+        } catch (rowErr) {
+          info(`[CSV IMPORT] Error processing row ${i + 1}: ${(rowErr as Error).message}`);
+          continue;
         }
-      });
+      }
 
-      createdCount++;
+      // Delete uploaded file
+      fs.unlinkSync(req.file.path);
+      info(`[CSV IMPORT] Deleted uploaded file`);
+      info(`[CSV IMPORT] Successfully imported ${createdCount} items`);
+
+      res.json(successResponse(`Successfully imported ${createdCount} items`, { createdCount }));
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : "Error importing items";
+      error(`[CSV IMPORT ERROR] ${errorMessage}`);
+      res.status(500).json(errorResponse(errorMessage));
+      next(err);
     }
-
-    // [8] Delete uploaded file
-    fs.unlinkSync(req.file.path);
-    info(`[CSV IMPORT] Deleted uploaded file`);
-
-    // * [SUCCESS] Items imported
-    info(`[INFO] Imported ${createdCount} items from CSV`);
-    res.json(successResponse(`Successfully imported ${createdCount} items`, { createdCount }));
-  } catch (err: unknown) {
-    let errorMessage = "Error importing items";
-    if (err instanceof Error) errorMessage = err.message;
-    error(`[CSV IMPORT ERROR] ${errorMessage}`);
-    res.status(500).json(errorResponse(errorMessage));
-    next(err);
   }
-});
+);
 
 // * [GET] Get All Items
 // ? /api/items/

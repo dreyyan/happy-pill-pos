@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // [IMPORT] React & Hooks
 import { useAuth } from "../../context/useAuth";
 import { useState, useEffect, useRef } from "react";
@@ -26,6 +27,9 @@ const AdminItems = () => {
   // [STATE] Category & Subcategory Filters
   const [filterCategoryId, setFilterCategoryId] = useState<number | null>(null);
   const [filterSubcategoryId, setFilterSubcategoryId] = useState<number | null>(null);
+
+  // [STATE] Department Filter
+  const [filterDepartment, setFilterDepartment] = useState<"RESTOBAR" | "CAFE" | "ALL">("ALL");
 
   // [STATE] CRUD Modals
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -63,6 +67,7 @@ const AdminItems = () => {
     categoryId: undefined,
     subcategoryId: undefined,
     unit: "",
+    department: "RESTOBAR" as const,
   };
   const [formData, setFormData] = useState(initialForm);
   const selectedCategory = categories.find((c) => c.id === formData.categoryId);
@@ -337,7 +342,7 @@ const AdminItems = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Filtered & Sorted items
+  // Filtered & Sorted items (UPDATED with department filter)
   const displayedItems = items
     .filter((item) =>
       item.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -345,6 +350,11 @@ const AdminItems = () => {
     )
     .filter((item) => (filterCategoryId ? item.category?.id === filterCategoryId : true))
     .filter((item) => (filterSubcategoryId ? item.subcategory?.id === filterSubcategoryId : true))
+    // NEW: Department filter
+    .filter((item) => {
+      if (filterDepartment === "ALL") return true;
+      return item.department === filterDepartment;
+    })
     .sort((a, b) => {
       switch (sortOption) {
         case "name-asc": return a.name.localeCompare(b.name);
@@ -356,8 +366,6 @@ const AdminItems = () => {
       }
       return 0;
     });
-
-  const handleAutoAddClick = () => fileInputRef.current?.click();
 
   // [DERIVED] Mobile paginated slice of displayedItems
   const totalPages = Math.ceil(displayedItems.length / MOBILE_PAGE_SIZE);
@@ -374,56 +382,6 @@ const AdminItems = () => {
   useEffect(() => {
     setCurrentPage(1);
   }, [search, sortOption, filterCategoryId, filterSubcategoryId]);
-
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const formDataObj = new FormData();
-    formDataObj.append("file", file);
-
-    try {
-      const token = localStorage.getItem("token");
-      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/items/import-items`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-        body: formDataObj,
-      });
-
-      if (res.status === 401) {
-        setShowTokenExpiredModal(true);
-        return;
-      }
-
-      const data = await res.json();
-      if (!data.success) {
-        setModalTitle("Import Failed");
-        setModalMessage(data.message || "Failed to import CSV");
-        setModalType("error");
-        setShowModal(true);
-        return;
-      }
-
-      setModalTitle("Import Success");
-      setModalMessage(`Successfully imported ${data.data.createdCount} items.`);
-      setModalType("success");
-      setShowModal(true);
-
-      // Refresh list
-      const resRefresh = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/items`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-      });
-      const refreshData = await resRefresh.json();
-      if (refreshData.success) setItems(refreshData.data);
-    } catch (err) {
-      setModalTitle("Error");
-      setModalMessage(err instanceof Error ? err.message : "Something went wrong");
-      setModalType("error");
-      setShowModal(true);
-    } finally {
-      if (fileInputRef.current) fileInputRef.current.value = "";
-    }
-  };
 
   if (loading) return <p>Loading items...</p>;
   if (error) return <p className="text-red-500">{error}</p>;
@@ -485,7 +443,7 @@ const AdminItems = () => {
             onChange: (value) => {
               const id = Number(value);
               const cat = categories.find((c) => c.id === id);
-              setFormData((prev) => ({
+              setFormData((prev: any) => ({
                 ...prev,
                 categoryId: id,
                 subcategoryId: cat?.subcategories[0]?.id ?? undefined,
@@ -496,9 +454,9 @@ const AdminItems = () => {
             key: "subcategoryId",
             label: "Subcategory",
             type: "select",
-            options: selectedCategory?.subcategories.map((s) => ({ label: s.name, value: s.id })) ?? [],
+            options: selectedCategory?.subcategories.map((s: { name: any; id: any; }) => ({ label: s.name, value: s.id })) ?? [],
             value: formData.subcategoryId ? String(formData.subcategoryId) : "",
-            onChange: (value) => setFormData((prev) => ({ ...prev, subcategoryId: Number(value) })),
+            onChange: (value) => setFormData((prev: any) => ({ ...prev, subcategoryId: Number(value) })),
           },
           { key: "unit", label: "Unit", type: "text" },
         ]}
@@ -554,10 +512,25 @@ const AdminItems = () => {
         </div>
       </div>
 
-      {/* Category Filters */}
-      <div className="flex gap-2 mt-4">
+      <div className="flex flex-wrap gap-2 mt-4">
+        {/* [FILTER] Department */}
         <select
-          className="flex-1 bg-[var(--color-bg-50)] rounded-sm py-2 px-3 text-sm outline-none focus:ring-2 focus:ring-[var(--color-primary-600)]"
+          className="flex-1 min-w-[140px] bg-[var(--color-bg-50)] rounded-sm py-2 px-3 text-sm outline-none focus:ring-2 focus:ring-[var(--color-primary-600)]"
+          value={filterDepartment}
+          onChange={(e) => {
+            setFilterDepartment(e.target.value as "RESTOBAR" | "CAFE" | "ALL");
+            setFilterCategoryId(null);
+            setFilterSubcategoryId(null);
+          }}
+        >
+          <option value="ALL">All Departments</option>
+          <option value="RESTOBAR">Restobar</option>
+          <option value="CAFE">Cafe</option>
+        </select>
+
+        {/* [FILTER] Category */}
+        <select
+          className="flex-1 min-w-[140px] bg-[var(--color-bg-50)] rounded-sm py-2 px-3 text-sm outline-none focus:ring-2 focus:ring-[var(--color-primary-600)]"
           value={filterCategoryId ?? ""}
           onChange={(e) => {
             const id = Number(e.target.value) || null;
@@ -566,11 +539,16 @@ const AdminItems = () => {
           }}
         >
           <option value="">All Categories</option>
-          {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+          {categories.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.name}
+            </option>
+          ))}
         </select>
 
+        {/* [FILTER] Subcategory */}
         <select
-          className="flex-1 bg-[var(--color-bg-50)] rounded-sm py-2 px-3 text-sm outline-none focus:ring-2 focus:ring-[var(--color-primary-600)]"
+          className="flex-1 min-w-[140px] bg-[var(--color-bg-50)] rounded-sm py-2 px-3 text-sm outline-none focus:ring-2 focus:ring-[var(--color-primary-600)]"
           value={filterSubcategoryId ?? ""}
           onChange={(e) => setFilterSubcategoryId(Number(e.target.value) || null)}
           disabled={!filterCategoryId}
@@ -579,7 +557,7 @@ const AdminItems = () => {
           {filterCategoryId &&
             categories
               .find((c) => c.id === filterCategoryId)
-              ?.subcategories.map((s) => (
+              ?.subcategories.map((s: { id: React.Key | readonly string[] | null | undefined; name: string | number | bigint | boolean | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | React.ReactPortal | Promise<string | number | bigint | boolean | React.ReactPortal | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | null | undefined> | null | undefined; }) => (
                 <option key={s.id} value={s.id}>
                   {s.name}
                 </option>

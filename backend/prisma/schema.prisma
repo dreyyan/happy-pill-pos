@@ -38,6 +38,11 @@ enum OrderStatus {
   CANCELLED
 }
 
+enum Department {
+  CAFE
+  RESTOBAR
+}
+
 // * [MODELS]
 model User {
   id        Int       @id @default(autoincrement())
@@ -102,6 +107,8 @@ model Category {
   description String?
   isActive    Boolean  @default(true)
 
+  department  Department?
+
   // ? Metadata
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -143,6 +150,8 @@ model Item {
   reorderLevel  Int?      @default(0)
   isActive      Boolean   @default(true)
 
+  department    Department
+
   // ? Category relation
   categoryId    Int?
   category      Category? @relation(fields: [categoryId], references: [id])
@@ -164,6 +173,9 @@ model Item {
   transactionItems  TransactionItem[]
   inventoryReports  InventoryReport[]
   orderItems        OrderItem[]
+
+  // ? Index
+  @@index([department])
 }
 
 model InventoryLog {
@@ -185,6 +197,9 @@ model Transaction {
   receiptNumber   String    @unique
   cashierId       Int
   cashier         Cashier   @relation(fields: [cashierId], references: [id])
+
+  department      Department
+
   totalAmount     Float
   discount        Float?    @default(0)
   vatInclusive    Boolean?  
@@ -206,6 +221,10 @@ model Transaction {
 
   // ? Relations
   items           TransactionItem[]
+
+  // ? Indices
+  @@index([department])
+  @@index([createdAt])
 }
 
 model TransactionItem {
@@ -228,6 +247,9 @@ model Order {
   id            Int         @id @default(autoincrement())
   customerId    Int
   customer      Customer    @relation(fields: [customerId], references: [id])
+
+  department    Department
+
   status        OrderStatus @default(PENDING)
   totalAmount   Float
   isActive      Boolean     @default(true)
@@ -240,6 +262,9 @@ model Order {
 
   // ? Relations
   orderItems    OrderItem[]
+
+  // ? Index
+  @@index([department])
 }
 
 model OrderItem {

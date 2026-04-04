@@ -22,9 +22,10 @@ const app: Express = express();
 // [MIDDLEWARE] CORS
 app.use(cors({
     origin: [
-      "http://192.168.1.33:5173",
-      "http://192.168.1.38:5173",
-      "http://localhost:5173"
+      "http://192.168.1.33:5174",
+      "http://192.168.1.38:5174",
+      "http://192.168.56.1:5174",
+      "http://localhost:5174"
     ],
   credentials: true,
 }));

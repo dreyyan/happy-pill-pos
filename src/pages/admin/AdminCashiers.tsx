@@ -57,6 +57,12 @@ const AdminCashiers = () => {
   const [showSortFilters, setShowSortFilters] = useState(false);
   const filterRef = useRef<HTMLDivElement>(null);
 
+  // [STATE] Modal
+  const [showModal, setShowModal] = useState(false);
+  const [modalTitle, setModalTitle] = useState("");
+  const [modalMessage, setModalMessage] = useState("");
+  const [modalType, setModalType] = useState<"default" | "success" | "error" | "info">("default");
+
   // [STATE] Create Modal
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -109,7 +115,7 @@ const AdminCashiers = () => {
   // * [UPDATE PAGE TITLE]
   usePageTitle(`Cashiers: Admin | ${businessName}`);
 
-  // *[EFFECT] Fetch all cashiers
+  // *[EFFECT] Fetch all cashiers (only active)
   useEffect(() => {
     const fetchCashiers = async () => {
       setLoading(true);
@@ -133,6 +139,7 @@ const AdminCashiers = () => {
         }
 
         setCashiers(data.data);
+
       } catch (err) {
         const error = err instanceof Error ? err : new Error("Something went wrong");
         setError(error.message);
@@ -211,7 +218,21 @@ const AdminCashiers = () => {
       const data = await res.json();
       if (!data.success) { setFormError(data.message || "Failed to update cashier"); return; }
 
-      setCashiers((prev) => prev.map((c) => (c.id === selectedCashier.id ? data.data : c)));
+      // Refetch all cashiers to get updated user objects
+      const fetchRes = await fetch(`${apiBase}/api/cashier/`, {
+        headers: { Authorization: `Bearer ${token()}` },
+      });
+      const fetchData = await fetchRes.json();
+      
+      if (fetchData.success) {
+        // * [SUCCESS] Cashier edited successfully
+        setModalTitle("Success");
+        setModalMessage(`Cashier information edited successfully!`);
+        setModalType("success");
+        setShowModal(true);
+        setCashiers(fetchData.data);
+      }
+      
       setShowEditModal(false);
       setSelectedCashier(null);
     } catch (err) {
@@ -221,30 +242,87 @@ const AdminCashiers = () => {
     }
   };
 
-  // *[HANDLE] Delete cashier
-  const handleConfirmDelete = async () => {
-    if (!cashierToDelete) return;
+  // *[HANDLE] Restore cashier
+  const handleRestoreCashier = async (cashier: CashierData) => {
     try {
-      const res = await fetch(`${apiBase}/api/cashiers/${cashierToDelete.id}`, {
-        method: "DELETE",
+      const res = await fetch(`${apiBase}/api/cashier/restore/${cashier.id}`, {
+        method: "PATCH",
         headers: { Authorization: `Bearer ${token()}` },
       });
 
       if (res.status === 401) { setShowTokenExpiredModal(true); return; }
 
       const data = await res.json();
-      if (!data.success) { alert(data.message || "Failed to delete cashier"); return; }
+      if (!data.success) {
+        alert(data.message || "Failed to restore cashier");
+        return;
+      }
 
-      setCashiers((prev) => prev.filter((c) => c.id !== cashierToDelete.id));
-      setShowDeleteModal(false);
-      setCashierToDelete(null);
+      // Refetch all cashiers to get updated user objects
+      const fetchRes = await fetch(`${apiBase}/api/cashier/`, {
+        headers: { Authorization: `Bearer ${token()}` },
+      });
+      const fetchData = await fetchRes.json();
+      
+      if (fetchData.success) {
+        // * [SUCCESS] Cashier restored successfully
+        setModalTitle("Success");
+        setModalMessage(`Cashier restored successfully!`);
+        setModalType("success");
+        setShowModal(true);
+        setCashiers(fetchData.data);
+      }
+
     } catch (err) {
       alert(err instanceof Error ? err.message : "Something went wrong");
     }
   };
 
-  // ── Filter + Sort ──────────────────────────────────────────────────────────
+  // *[HANDLE] Delete cashier (soft)
+  const handleConfirmDelete = async () => {
+    if (!cashierToDelete) return;
 
+    try {
+      const res = await fetch(`${apiBase}/api/cashier/${cashierToDelete.user.id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token()}` },
+      });
+
+      if (res.status === 401) {
+        setShowTokenExpiredModal(true);
+        return;
+      }
+
+      const data = await res.json();
+
+      if (!data.success) {
+        alert(data.message || "Failed to delete cashier");
+        return;
+      }
+
+      // Refetch cashiers to ensure full user objects
+      const fetchRes = await fetch(`${apiBase}/api/cashier/`, {
+        headers: { Authorization: `Bearer ${token()}` },
+      });
+      const fetchData = await fetchRes.json();
+      if (fetchData.success) {
+        // * [SUCCESS] Cashier soft-deleted successfully
+        setModalTitle("Success");
+        setModalMessage(`Cashier soft-deleted successfully!`);
+        setModalType("success");
+        setShowModal(true);
+        setCashiers(fetchData.data);
+      }
+
+      setShowDeleteModal(false);
+      setCashierToDelete(null);
+
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Something went wrong");
+    }
+  };
+
+  // [FILTER + SORT]
   const displayedCashiers = cashiers
     .filter((c) => {
       const q = search.toLowerCase();
@@ -259,14 +337,22 @@ const AdminCashiers = () => {
       }
     });
 
-  // ── Render ─────────────────────────────────────────────────────────────────
-
   if (loading) return <p>Loading cashiers...</p>;
   if (error) return <p className="text-red-500">{error}</p>;
 
   return (
     <div className="py-10 px-4 space-y-4 relative">
-
+      {/* [MODAL] General */}
+      {showModal && (
+        <Modal
+          isOpen={showModal}
+          onClose={() => setShowModal(false)}
+          onConfirm={() => setShowModal(false)}
+          title={modalTitle}
+          message={modalMessage}
+          type={modalType}
+        />
+      )}
       {/* [MODAL] Confirm Delete */}
       {showDeleteModal && cashierToDelete && (
         <Modal
@@ -433,30 +519,47 @@ const AdminCashiers = () => {
                     })}
                   </td>
                   <td className="py-2 px-4 flex justify-center items-center gap-2">
-                    <img
-                      src="/edit-filled-icon.svg"
-                      alt="Edit"
-                      className="w-5 h-5 cursor-pointer"
-                      onClick={() => {
-                        setSelectedCashier(c);
-                        setFormData({
-                          firstName: c.user.firstName,
-                          lastName: c.user.lastName,
-                          email: c.user.email,
-                          password: "",
-                        });
-                        setShowEditModal(true);
-                      }}
-                    />
-                    <img
-                      src="/delete-icon.svg"
-                      alt="Delete"
-                      className="w-5 h-5 cursor-pointer"
-                      onClick={() => {
-                        setCashierToDelete(c);
-                        setShowDeleteModal(true);
-                      }}
-                    />
+                    {c.user.isActive ? (
+                      <>
+                        {/* Edit */}
+                        <img
+                          src="/edit-filled-icon.svg"
+                          alt="Edit"
+                          className="w-5 h-5 cursor-pointer"
+                          onClick={() => {
+                            setSelectedCashier(c);
+                            setFormData({
+                              firstName: c.user.firstName,
+                              lastName: c.user.lastName,
+                              email: c.user.email,
+                              password: "",
+                            });
+                            setShowEditModal(true);
+                          }}
+                        />
+
+                        {/* Delete */}
+                        <img
+                          src="/delete-icon.svg"
+                          alt="Delete"
+                          className="w-5 h-5 cursor-pointer"
+                          onClick={() => {
+                            setCashierToDelete(c);
+                            setShowDeleteModal(true);
+                          }}
+                        />
+                      </>
+                    ) : (
+                      <>
+                        {/* Restore */}
+                        <button
+                          className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200"
+                          onClick={() => handleRestoreCashier(c)}
+                        >
+                          Restore
+                        </button>
+                      </>
+                    )}
                   </td>
                 </tr>
               ))}

@@ -199,32 +199,85 @@ router.put('/:id', verifyRole(['ADMIN']), async (req: Request, res: Response, ne
     }
 });
 
+// * [PATCH] Restore Cashier (Undo Soft Delete)
+// ? /api/cashier/restore/:id
+router.patch('/restore/:id', verifyRole(['ADMIN']), async (req: Request, res: Response, next: NextFunction) => {
+    const { id } = req.params;
+
+    try {
+        // [1] Fetch the cashier and its user
+        const existingCashier = await prisma.cashier.findUnique({
+            where: { id: Number(id) },
+            include: { user: true }
+        });
+
+        if (!existingCashier || !existingCashier.user) {
+            return res.status(404).json(errorResponse("Cashier not found"));
+        }
+
+        const user = existingCashier.user;
+
+        if (user.role !== 'CASHIER') {
+            return res.status(400).json(errorResponse("Cannot restore an admin or non-cashier user"));
+        }
+
+        if (user.isActive) {
+            return res.status(400).json(errorResponse("Cashier is already active"));
+        }
+
+        // [2] Restore user
+        const restoredUser = await prisma.user.update({
+            where: { id: user.id },
+            data: { isActive: true }
+        });
+
+        info(`Cashier with id ${id} restored successfully`);
+        res.json(successResponse("Cashier restored successfully", restoredUser));
+
+    } catch (err: unknown) {
+        let errorMessage = "An unexpected error occurred while restoring cashier";
+        if (err instanceof Error) errorMessage = err.message;
+        error(`Error restoring cashier with id ${id}: ${JSON.stringify(err)}`);
+        res.status(500).json(errorResponse(errorMessage));
+        next(err);
+    }
+});
+
 // * [DELETE] Delete Cashier (Soft)
 // ? /api/cashier/:id
 router.delete('/:id', verifyRole(['ADMIN']), async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
     try {
-        // [1] Fetch the user to ensure they exist
+        // [1] Fetch the user (without including cashier if not needed)
         const existingUser = await prisma.user.findUnique({
-            where: { id: Number(id) },
-            include: { cashier: true }
+            where: { id: Number(id) }
         });
 
-        // ! [ERROR] Cashier not found
-        if (!existingUser || existingUser.role !== 'CASHIER') {
-            return res.status(404).json(errorResponse("Cashier not found"));
+        // ! [ERROR] User not found
+        if (!existingUser) {
+            return res.status(404).json(errorResponse("User not found"));
         }
 
-        // [2] Soft delete by setting isActive to false
+        // ! [ERROR] Prevent deleting non-cashiers
+        if (existingUser.role !== 'CASHIER') {
+            return res.status(400).json(errorResponse("Cannot delete an admin or non-cashier user"));
+        }
+
+        // ! [ERROR] Prevent deleting already soft-deleted cashier
+        if (!existingUser.isActive) {
+            return res.status(400).json(errorResponse("Cashier is already deleted"));
+        }
+
+        // [2] Soft delete
         const softDeletedUser = await prisma.user.update({
             where: { id: Number(id) },
-            data: { isActive: false },
-            include: { cashier: true }
+            data: { isActive: false }
         });
 
         // * [SUCCESS] Cashier soft-deleted successfully
         info(`Cashier with id ${id} soft-deleted successfully`);
         res.json(successResponse("Cashier deleted successfully (soft delete)", softDeletedUser));
+
     } catch (err: unknown) {
         let errorMessage = "An unexpected error occurred while deleting cashier";
         if (err instanceof Error) {

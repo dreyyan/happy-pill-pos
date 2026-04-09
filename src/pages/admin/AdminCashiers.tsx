@@ -3,7 +3,6 @@ import React from "react";
 import { useAuth } from "../../context/useAuth";
 import { useState, useEffect, useRef } from "react";
 import { usePageTitle } from "../../hooks/usePageTitle";
-import { useNavigate } from "react-router-dom";
 
 // [IMPORT] Components
 import Modal from "../../components/Modal";
@@ -46,7 +45,6 @@ const sortLabels: Record<SortOption, string> = {
 
 const AdminCashiers = () => {
   const { setShowTokenExpiredModal } = useAuth();
-  const navigate = useNavigate();
 
   // [STATES]
   const [cashiers, setCashiers] = useState<CashierData[]>([]);
@@ -147,8 +145,6 @@ const AdminCashiers = () => {
     fetchCashiers();
   }, []);
 
-  // ── CRUD ───────────────────────────────────────────────────────────────────
-
   // *[HANDLE] Create cashier
   const handleCreateCashier = async () => {
     setFormError("");
@@ -200,7 +196,7 @@ const AdminCashiers = () => {
 
     try {
       setCreating(true);
-      const { password, ...payload } = formData; // omit password on edit
+      const { ...payload } = formData; // omit password on edit
       const res = await fetch(`${apiBase}/api/cashier/${selectedCashier.id}`, {
         method: "PUT",
         headers: {
